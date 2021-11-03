@@ -63,3 +63,22 @@ func Unique[T comparable](slice []T) []T {
 	}
 	return rs
 }
+
+func First[T any](slice []T, predicate func(T) bool) (*T, bool) {
+	for _, t := range slice {
+		if predicate(t) {
+			return &t, true
+		}
+	}
+	return nil, false
+}
+
+func Last[T any](slice []T, predicate func(T) bool) (*T, bool) {
+	for i := len(slice) - 1; i > 0; i-- {
+		t := slice[i]
+		if predicate(t) {
+			return &t, true
+		}
+	}
+	return nil, false
+}

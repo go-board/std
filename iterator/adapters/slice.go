@@ -10,10 +10,10 @@ type sliceIter[T any] struct {
 	iterIndex int
 }
 
-func (i *sliceIter[T]) Next() optional.Optional[T] {
-	if i.iterIndex < len(i.elements) {
-		i.iterIndex++
-		return optional.Some(i.elements[i.iterIndex-1])
+func (self *sliceIter[T]) Next() optional.Optional[T] {
+	if self.iterIndex < len(self.elements) {
+		self.iterIndex++
+		return optional.Some(self.elements[self.iterIndex-1])
 	}
 	return optional.None[T]()
 }

@@ -10,29 +10,29 @@ func NewHashSet[T comparable](slice ...T) *HashSet[T] {
 	return set
 }
 
-func (s *HashSet[T]) Add(targets ...T) {
+func (self *HashSet[T]) Add(targets ...T) {
 	for _, t := range targets {
-		s.store[t] = struct{}{}
+		self.store[t] = struct{}{}
 	}
 }
 
-func (s *HashSet[T]) Remove(targets ...T) {
+func (self *HashSet[T]) Remove(targets ...T) {
 	for _, t := range targets {
-		delete(s.store, t)
+		delete(self.store, t)
 	}
 }
 
-func (s *HashSet[T]) Contains(target T) bool {
-	_, ok := s.store[target]
+func (self *HashSet[T]) Contains(target T) bool {
+	_, ok := self.store[target]
 	return ok
 }
 
-func (s *HashSet[T]) Iter(f func(T)) {
-	for t := range s.store {
+func (self *HashSet[T]) Iter(f func(T)) {
+	for t := range self.store {
 		f(t)
 	}
 }
 
-func (s *HashSet[T]) Intersection(o *HashSet[T]) *HashSet[T] {
+func (self *HashSet[T]) Intersection(o *HashSet[T]) *HashSet[T] {
 	return o
 }

@@ -21,10 +21,10 @@ type User struct {
 	Age  uint8
 }
 
-func (u *User) Hash(state hash.Hasher) {
-	state.WriteInt64(u.ID)
-	state.Write([]byte(u.Name))
-	state.WriteUint8(u.Age)
+func (self *User) Hash(state hash.Hasher) {
+	state.WriteInt64(self.ID)
+	state.Write([]byte(self.Name))
+	state.WriteUint8(self.Age)
 }
 
 func TestHash(t *testing.T) {

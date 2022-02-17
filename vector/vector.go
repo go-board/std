@@ -10,14 +10,14 @@ func FromSlice[T any](slice []T) *Vector[T] {
 	return &Vector[T]{vec: append([]T{}, slice...)}
 }
 
-func (v *Vector[T]) Append(target T) {
-	v.vec = append(v.vec, target)
+func (self *Vector[T]) Append(target T) {
+	self.vec = append(self.vec, target)
 }
 
-func (v *Vector[T]) Prepend(target T) {
-	v.vec = append([]T{target}, v.vec...)
+func (self *Vector[T]) Prepend(target T) {
+	self.vec = append([]T{target}, self.vec...)
 }
 
-func (v *Vector[T]) Extend(vec *Vector[T]) {
-	v.vec = append(v.vec, vec.vec...)
+func (self *Vector[T]) Extend(vec *Vector[T]) {
+	self.vec = append(self.vec, vec.vec...)
 }

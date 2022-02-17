@@ -37,17 +37,17 @@ func FromIterator[T any](iter iterator.Iterator[T]) *LinkedList[T] {
 	return list
 }
 
-func (l *LinkedList[T]) Iter() iterator.Iterator[T] {
-	return &linkedListIter[T]{list: l, iterNode: l.head}
+func (self *LinkedList[T]) Iter() iterator.Iterator[T] {
+	return &linkedListIter[T]{list: self, iterNode: self.head}
 }
 
-func (l *LinkedList[T]) Append(data T) {
+func (self *LinkedList[T]) Append(data T) {
 	listNode := &linkedListNode[T]{data: data, next: nil}
-	if l.tail != nil {
-		l.tail = listNode
+	if self.tail != nil {
+		self.tail = listNode
 	}
-	l.head = listNode
-	l.tail = listNode
+	self.head = listNode
+	self.tail = listNode
 }
 
 type linkedListIter[T any] struct {
@@ -57,10 +57,10 @@ type linkedListIter[T any] struct {
 
 var _ iterator.Iterator[any] = (*linkedListIter[any])(nil)
 
-func (l *linkedListIter[T]) Next() optional.Optional[T] {
-	if l.iterNode != nil {
-		value := l.iterNode.data
-		l.iterNode = l.iterNode.next
+func (self *linkedListIter[T]) Next() optional.Optional[T] {
+	if self.iterNode != nil {
+		value := self.iterNode.data
+		self.iterNode = self.iterNode.next
 		return optional.Some(value)
 	}
 	return optional.None[T]()

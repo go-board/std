@@ -20,31 +20,31 @@ func Err[Ok any](err error) Result[Ok] {
 	return Of(ok, err)
 }
 
-func (r Result[Ok]) IsOk() bool  { return r.err == nil }
-func (r Result[Ok]) IsErr() bool { return !r.IsOk() }
+func (self Result[Ok]) IsOk() bool  { return self.err == nil }
+func (self Result[Ok]) IsErr() bool { return !self.IsOk() }
 
-func (r Result[Ok]) Value() Ok {
-	if r.IsOk() {
-		return r.data
+func (self Result[Ok]) Value() Ok {
+	if self.IsOk() {
+		return self.data
 	}
 	panic("unwrap error value")
 }
 
-func (r Result[Ok]) Error() error {
-	if r.IsErr() {
-		return r.err
+func (self Result[Ok]) Error() error {
+	if self.IsErr() {
+		return self.err
 	}
 	panic("unwrap ok value")
 }
 
-func (r Result[Ok]) IfOk(consume delegate.Consumer1[Ok]) {
-	if r.IsOk() {
-		consume(r.Value())
+func (self Result[Ok]) IfOk(consume delegate.Consumer1[Ok]) {
+	if self.IsOk() {
+		consume(self.Value())
 	}
 }
 
-func (r Result[Ok]) IfErr(consume delegate.Consumer1[error]) {
-	if r.IsErr() {
-		consume(r.Error())
+func (self Result[Ok]) IfErr(consume delegate.Consumer1[error]) {
+	if self.IsErr() {
+		consume(self.Error())
 	}
 }

@@ -11,7 +11,7 @@ type flattenIter[T any] struct {
 	flatten delegate.Transform[T, iterator.Iterator[T]]
 }
 
-func (i *flattenIter[T]) Next() optional.Optional[T] {
+func (self *flattenIter[T]) Next() optional.Optional[T] {
 	return optional.None[T]()
 }
 

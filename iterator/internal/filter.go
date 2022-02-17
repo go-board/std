@@ -11,9 +11,9 @@ type filterIter[T any] struct {
 	filter delegate.Predicate[T]
 }
 
-func (i *filterIter[T]) Next() optional.Optional[T] {
-	for s := i.iter.Next(); s.IsSome(); s = i.iter.Next() {
-		if i.filter(s.Value()) {
+func (self *filterIter[T]) Next() optional.Optional[T] {
+	for s := self.iter.Next(); s.IsSome(); s = self.iter.Next() {
+		if self.filter(s.Value()) {
 			return s
 		}
 	}
@@ -29,9 +29,9 @@ type mapFilterIter[T, U any] struct {
 	mapFilter func(T) optional.Optional[U]
 }
 
-func (i *mapFilterIter[T, U]) Next() optional.Optional[U] {
-	for s := i.iter.Next(); s.IsSome(); s = i.iter.Next() {
-		if m := i.mapFilter(s.Value()); m.IsSome() {
+func (self *mapFilterIter[T, U]) Next() optional.Optional[U] {
+	for s := self.iter.Next(); s.IsSome(); s = self.iter.Next() {
+		if m := self.mapFilter(s.Value()); m.IsSome() {
 			return m
 		}
 	}
@@ -48,10 +48,10 @@ type takeIter[T any] struct {
 	iterIndex uint
 }
 
-func (i *takeIter[T]) Next() optional.Optional[T] {
-	if i.iterIndex < i.n {
-		i.iterIndex++
-		return i.iter.Next()
+func (self *takeIter[T]) Next() optional.Optional[T] {
+	if self.iterIndex < self.n {
+		self.iterIndex++
+		return self.iter.Next()
 	}
 	return optional.None[T]()
 }
@@ -66,12 +66,12 @@ type skipIter[T any] struct {
 	iterIndex uint
 }
 
-func (i *skipIter[T]) Next() optional.Optional[T] {
-	for i.iterIndex < i.n {
-		i.iterIndex++
-		i.iter.Next()
+func (self *skipIter[T]) Next() optional.Optional[T] {
+	for self.iterIndex < self.n {
+		self.iterIndex++
+		self.iter.Next()
 	}
-	return i.iter.Next()
+	return self.iter.Next()
 }
 
 func Skip[T any](iter iterator.Iterator[T], n uint) iterator.Iterator[T] {
@@ -83,9 +83,9 @@ type takeWhileIter[T any] struct {
 	predicate delegate.Predicate[T]
 }
 
-func (i *takeWhileIter[T]) Next() optional.Optional[T] {
-	for s := i.iter.Next(); s.IsSome(); s = i.iter.Next() {
-		if i.predicate(s.Value()) {
+func (self *takeWhileIter[T]) Next() optional.Optional[T] {
+	for s := self.iter.Next(); s.IsSome(); s = self.iter.Next() {
+		if self.predicate(s.Value()) {
 			return s
 		}
 	}
@@ -101,9 +101,9 @@ type skipWhileIter[T any] struct {
 	predicate delegate.Predicate[T]
 }
 
-func (i *skipWhileIter[T]) Next() optional.Optional[T] {
-	for s := i.iter.Next(); s.IsSome(); s = i.iter.Next() {
-		if !i.predicate(s.Value()) {
+func (self *skipWhileIter[T]) Next() optional.Optional[T] {
+	for s := self.iter.Next(); s.IsSome(); s = self.iter.Next() {
+		if !self.predicate(s.Value()) {
 			return s
 		}
 	}
@@ -119,10 +119,10 @@ type stepByIter[T any] struct {
 	iterIndex uint
 }
 
-func (i *stepByIter[T]) Next() optional.Optional[T] {
-	for s := i.iter.Next(); s.IsSome(); s = i.iter.Next() {
-		i.iterIndex++
-		if i.iterIndex%i.n == 0 {
+func (self *stepByIter[T]) Next() optional.Optional[T] {
+	for s := self.iter.Next(); s.IsSome(); s = self.iter.Next() {
+		self.iterIndex++
+		if self.iterIndex%self.n == 0 {
 			return s
 		}
 	}

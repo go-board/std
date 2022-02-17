@@ -11,10 +11,10 @@ type mapIter[T, U any] struct {
 	transformer delegate.Transform[T, U]
 }
 
-func (i *mapIter[T, U]) Next() optional.Optional[U] {
-	e := i.iter.Next()
+func (self *mapIter[T, U]) Next() optional.Optional[U] {
+	e := self.iter.Next()
 	if e.IsSome() {
-		return optional.Some(i.transformer(e.Value()))
+		return optional.Some(self.transformer(e.Value()))
 	}
 	return optional.None[U]()
 }

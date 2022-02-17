@@ -11,10 +11,10 @@ type inspectIter[T any] struct {
 	inspect delegate.Consumer1[T]
 }
 
-func (i *inspectIter[T]) Next() optional.Optional[T] {
-	o := i.iter.Next()
+func (self *inspectIter[T]) Next() optional.Optional[T] {
+	o := self.iter.Next()
 	if o.IsSome() {
-		i.inspect(o.Value())
+		self.inspect(o.Value())
 	}
 	return o
 }
@@ -31,9 +31,9 @@ type inspectIterUntil[T any] struct {
 	inspect delegate.Predicate[T]
 }
 
-func (i *inspectIterUntil[T]) Next() optional.Optional[T] {
-	o := i.iter.Next()
-	if o.IsSome() && i.inspect(o.Value()) {
+func (self *inspectIterUntil[T]) Next() optional.Optional[T] {
+	o := self.iter.Next()
+	if o.IsSome() && self.inspect(o.Value()) {
 		return o
 	}
 	return optional.None[T]()

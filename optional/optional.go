@@ -18,25 +18,25 @@ func OfPtr[T any](data *T) Optional[T] { return Optional[T]{data: data} }
 func Some[T any](data T) Optional[T]   { return Optional[T]{data: &data} }
 func None[T any]() Optional[T]         { return Optional[T]{} }
 
-func (o Optional[T]) IsSome() bool { return o.data != nil }
+func (self Optional[T]) IsSome() bool { return self.data != nil }
 
-func (o Optional[T]) IsNone() bool { return !o.IsSome() }
+func (self Optional[T]) IsNone() bool { return !self.IsSome() }
 
-func (o Optional[T]) Value() T {
-	if o.IsSome() {
-		return *o.data
+func (self Optional[T]) Value() T {
+	if self.IsSome() {
+		return *self.data
 	}
 	panic("Unwrap empty value")
 }
 
-func (o Optional[T]) IfPresent(consume delegate.Consumer1[T]) {
-	if o.IsSome() {
-		consume(o.Value())
+func (self Optional[T]) IfPresent(consume delegate.Consumer1[T]) {
+	if self.IsSome() {
+		consume(self.Value())
 	}
 }
 
-func (o Optional[T]) IfAbsent(consume func()) {
-	if o.IsNone() {
+func (self Optional[T]) IfAbsent(consume func()) {
+	if self.IsNone() {
 		consume()
 	}
 }

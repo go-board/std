@@ -10,9 +10,9 @@ type mapEntry[K, V any] struct {
 	value V
 }
 
-func (e *mapEntry[K, V]) GetKey() K { return e.key }
+func (self *mapEntry[K, V]) GetKey() K { return self.key }
 
-func (e *mapEntry[K, V]) GetValue() V { return e.value }
+func (self *mapEntry[K, V]) GetValue() V { return self.value }
 
 func NewEntry[K comparable, V any](k K, v V) Entry[K, V] {
 	return &mapEntry[K, V]{key: k, value: v}

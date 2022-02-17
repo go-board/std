@@ -6,16 +6,30 @@ import (
 	"github.com/go-board/std/optional"
 )
 
-func MaxBy[T any](iter iterator.Iterator[T], cmp delegate.Comparison[T]) optional.Optional[T] {
-	return iter.Next()
+func MaxBy[T any](iter iterator.Iterator[T], ord delegate.Ord[T]) optional.Optional[T] {
+	return Reduce(iter, func(a, b T) T {
+		if ord(a, b) > 0 {
+			return a
+		}
+		return b
+	})
 }
 
-func MinBy[T any](iter iterator.Iterator[T], cmp delegate.Comparison[T]) optional.Optional[T] {
-	return iter.Next()
+func MinBy[T any](iter iterator.Iterator[T], ord delegate.Ord[T]) optional.Optional[T] {
+	return Reduce(iter, func(a, b T) T {
+		if ord(a, b) < 0 {
+			return a
+		}
+		return b
+	})
 }
 
-func SumBy[T any](iter iterator.Iterator[T], sum delegate.Add[T, T, T]) optional.Optional[T] {
-	return iter.Next()
+func SumBy[T any](iter iterator.Iterator[T], sum delegate.Function2[T, T, T]) optional.Optional[T] {
+	return Reduce(iter, sum)
+}
+
+func ProductBy[T any](iter iterator.Iterator[T], product delegate.Function2[T, T, T]) optional.Optional[T] {
+	return Reduce(iter, product)
 }
 
 type Numbric interface {
@@ -48,6 +62,17 @@ func Sum[T Numbric](iter iterator.Iterator[T]) optional.Optional[T] {
 	return SumBy(iter, func(t1 T, t2 T) T { return t1 + t2 })
 }
 
+func Product[T Numbric](iter iterator.Iterator[T]) optional.Optional[T] {
+	return ProductBy(iter, func(t1 T, t2 T) T { return t1 * t2 })
+}
+
 func Nth[T any](iter iterator.Iterator[T], n uint) optional.Optional[T] {
-	return iter.Next()
+	iterIndex := uint(0)
+	for s := iter.Next(); s.IsSome(); s = iter.Next() {
+		iterIndex++
+		if iterIndex == n {
+			return s
+		}
+	}
+	return optional.None[T]()
 }

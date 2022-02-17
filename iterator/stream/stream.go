@@ -10,16 +10,16 @@ type Stream[T any] interface {
 	iterator.Iterable[T]
 	All(predicate delegate.Predicate[T]) bool
 	Any(predicate delegate.Predicate[T]) bool
+	Once(predicate delegate.Predicate[T]) bool
 	None(predicate delegate.Predicate[T]) bool
 	Chain(o iterator.Iterable[T]) Stream[T]
 	Filter(predicate delegate.Predicate[T]) Stream[T]
-	Reduce(reduce delegate.Add[T, T, T]) optional.Optional[T]
+	Reduce(reduce delegate.Function2[T, T, T]) optional.Optional[T]
 	Flatten(flatten delegate.Transform[T, iterator.Iterator[T]]) Stream[T]
 	Inspect(inspect delegate.Consumer1[T]) Stream[T]
-	MaxBy(cmp delegate.Comparison[T]) optional.Optional[T]
-	MinBy(cmp delegate.Comparison[T]) optional.Optional[T]
-	SumBy(sum delegate.Add[T, T, T]) optional.Optional[T]
-	Equal(o iterator.Iterable[T], cmp delegate.Equal[T]) bool
+	MaxBy(ord delegate.Ord[T]) optional.Optional[T]
+	MinBy(ord delegate.Ord[T]) optional.Optional[T]
+	Equal(o iterator.Iterable[T], ord delegate.Equal[T]) bool
 	Collect() []T
 	Nth(n uint) optional.Optional[T]
 	Take(n uint) Stream[T]
@@ -30,5 +30,5 @@ type Stream[T any] interface {
 	StepBy(step uint) Stream[T]
 	Last() optional.Optional[T]
 	Advancing(step uint) Stream[T]
-	IsSorted(cmp delegate.Comparison[T]) bool
+	IsSorted(ord delegate.Ord[T]) bool
 }

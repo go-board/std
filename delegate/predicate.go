@@ -1,3 +1,3 @@
 package delegate
 
-type Predicate[T any] func(T) bool
+type Predicate[T any] Function1[T, bool]

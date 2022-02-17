@@ -1,3 +1,3 @@
 package delegate
 
-type Transform[In, Out any] func(In) Out
+type Transform[In, Out any] Function1[In, Out]

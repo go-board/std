@@ -21,7 +21,7 @@ func NewLinkedList[T any]() *LinkedList[T] {
 	return &LinkedList[T]{}
 }
 
-func OfSlice[T any](eles ...T) *LinkedList[T] {
+func FromSlice[T any](eles ...T) *LinkedList[T] {
 	list := NewLinkedList[T]()
 	for _, ele := range eles {
 		list.Append(ele)
@@ -29,7 +29,7 @@ func OfSlice[T any](eles ...T) *LinkedList[T] {
 	return list
 }
 
-func LinkedListFromIterator[T any](iter iterator.Iterator[T]) *LinkedList[T] {
+func FromIterator[T any](iter iterator.Iterator[T]) *LinkedList[T] {
 	list := NewLinkedList[T]()
 	for e := iter.Next(); e.IsSome(); e = iter.Next() {
 		list.Append(e.Value())

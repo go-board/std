@@ -2,16 +2,18 @@ package maps
 
 import (
 	"sort"
+
+	"github.com/go-board/std/delegate"
 )
 
 type keySorter[T any] struct {
-	Keys []T
-	cmp  func(T, T) bool
+	ord  delegate.Ord[T]
+	keys []T
 }
 
-func (ks *keySorter) Len() int           { return len(ks.Keys) }
-func (ks *keySorter) Less(i, j int) bool { return ks.cmp(ks.Keys[i], ks.Keys[j]) }
-func (ks *keySorter) Swap(i, j int)      { ks.Keys[i], ks.Keys[j] = ks.Keys[j], ks.Keys[i] }
+func (ks *keySorter[T]) Len() int           { return len(ks.keys) }
+func (ks *keySorter[T]) Less(i, j int) bool { return ks.ord(ks.keys[i], ks.keys[j]) < 0 }
+func (ks *keySorter[T]) Swap(i, j int)      { ks.keys[i], ks.keys[j] = ks.keys[j], ks.keys[i] }
 
 func Keys[K comparable, V any](m map[K]V) []K {
 	rs := make([]K, 0, len(m))
@@ -21,11 +23,11 @@ func Keys[K comparable, V any](m map[K]V) []K {
 	return rs
 }
 
-func SortedKeys[K comparable, V any](m map[K]V, cmp func(K, K) int) []K {
+func SortedKeys[K comparable, V any](m map[K]V, ord delegate.Ord[K]) []K {
 	keys := Keys(m)
-	ksWrapper := &keySorter[K]{Keys: keys, cmp: cmp}
+	ksWrapper := &keySorter[K]{keys: keys, ord: ord}
 	sort.Sort(ksWrapper)
-	return keySorter.Keys
+	return ksWrapper.keys
 }
 
 func Values[K comparable, V any](m map[K]V) []V {

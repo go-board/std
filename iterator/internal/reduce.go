@@ -6,7 +6,7 @@ import (
 	"github.com/go-board/std/optional"
 )
 
-func Reduce[T any](iter iterator.Iterator[T], reduce delegate.Add[T, T, T]) optional.Optional[T] {
+func Reduce[T any](iter iterator.Iterator[T], reduce delegate.Function2[T, T, T]) optional.Optional[T] {
 	first := iter.Next()
 	if first.IsNone() {
 		return optional.None[T]()

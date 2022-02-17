@@ -23,6 +23,20 @@ func Any[T any](iter iterator.Iterator[T], predicate delegate.Predicate[T]) bool
 	return false
 }
 
+func Once[T any](iter iterator.Iterator[T], predicate delegate.Predicate[T]) bool {
+	return matchCount(iter, predicate, 1)
+}
+
+func matchCount[T any](iter iterator.Iterator[T], predicate delegate.Predicate[T], n uint) bool {
+	hitCnt := uint(0)
+	for s := iter.Next(); s.IsSome(); s = iter.Next() {
+		if predicate(s.Value()) {
+			hitCnt++
+		}
+	}
+	return hitCnt == n
+}
+
 func None[T any](iter iterator.Iterator[T], predicate delegate.Predicate[T]) bool {
 	for s := iter.Next(); s.IsSome(); s = iter.Next() {
 		if predicate(s.Value()) {
@@ -30,4 +44,17 @@ func None[T any](iter iterator.Iterator[T], predicate delegate.Predicate[T]) boo
 		}
 	}
 	return true
+}
+
+func ContainsBy[T any](iter iterator.Iterator[T], target T, eq delegate.Equal[T]) bool {
+	for s := iter.Next(); s.IsSome(); s = iter.Next() {
+		if eq(s.Value(), target) {
+			return true
+		}
+	}
+	return false
+}
+
+func Contains[T comparable](iter iterator.Iterator[T], target T) bool {
+	return ContainsBy(iter, target, func(t1 T, t2 T) bool { return t1 == t2 })
 }

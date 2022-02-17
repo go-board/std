@@ -21,3 +21,19 @@ func (m *HashMap[K, V]) Iter(f func(K, V)) {
 		f(k, v)
 	}
 }
+
+func (m *HashMap[K, V]) Keys() []K {
+	ks := make([]K, 0)
+	for k := range m.store {
+		ks = append(ks, k)
+	}
+	return ks
+}
+
+func (m *HashMap[K, V]) Entries() []Entry[K, V] {
+	es := make([]Entry[K, V], 0)
+	for k, v := range m.store {
+		es = append(es, &mapEntry[K, V]{key: k, value: v})
+	}
+	return es
+}

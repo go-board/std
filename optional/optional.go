@@ -1,7 +1,6 @@
 package optional
 
 import (
-	"github.com/go-board/std/clone"
 	"github.com/go-board/std/delegate"
 )
 
@@ -33,7 +32,7 @@ func (self Optional[T]) And(opt Optional[T]) Optional[T] {
 	if self.IsSome() {
 		return opt
 	}
-	return self
+	return None[T]()
 }
 
 func (self Optional[T]) Or(opt Optional[T]) Optional[T] {
@@ -43,15 +42,16 @@ func (self Optional[T]) Or(opt Optional[T]) Optional[T] {
 	return self
 }
 
+func (self Optional[T]) OrElse(defaultValue T) T {
+	if self.IsSome() {
+		return self.Value()
+	}
+	return defaultValue
+}
+
 func (self Optional[T]) IfPresent(consume delegate.Consumer1[T]) {
 	if self.IsSome() {
 		consume(self.Value())
-	}
-}
-
-func (self Optional[T]) IfAbsent(consume func()) {
-	if self.IsNone() {
-		consume()
 	}
 }
 
@@ -62,16 +62,6 @@ func (self Optional[T]) Filter(fn delegate.Predicate[T]) Optional[T] {
 	return None[T]()
 }
 
-func Clone[T clone.Cloneable[T]](opt Optional[T]) Optional[T] {
-	if opt.IsSome() {
-		return Some(opt.Value().Clone())
-	}
-	return None[T]()
-}
-
-func Map[A, B any](opt Optional[A], mapFn delegate.Function1[A, B]) Optional[B] {
-	if opt.IsSome() {
-		return Some(mapFn(opt.Value()))
-	}
-	return None[B]()
+func (self Optional[T]) Map(mapFn delegate.Function1[T, T]) Optional[T] {
+	return Map(self, mapFn)
 }

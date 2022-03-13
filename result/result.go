@@ -1,6 +1,8 @@
 package result
 
-import "github.com/go-board/std/delegate"
+import (
+	"github.com/go-board/std/delegate"
+)
 
 type Result[Ok any] struct {
 	data Ok
@@ -22,6 +24,20 @@ func Err[Ok any](err error) Result[Ok] {
 
 func (self Result[Ok]) IsOk() bool  { return self.err == nil }
 func (self Result[Ok]) IsErr() bool { return !self.IsOk() }
+
+func (self Result[Ok]) And(res Result[Ok]) Result[Ok] {
+	if self.IsOk() {
+		return res
+	}
+	return Err[Ok](self.err)
+}
+
+func (self Result[T]) Or(res Result[T]) Result[T] {
+	if self.IsOk() {
+		return Ok(self.data)
+	}
+	return res
+}
 
 func (self Result[Ok]) Value() Ok {
 	if self.IsOk() {

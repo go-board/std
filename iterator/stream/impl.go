@@ -41,6 +41,10 @@ func (self *streamImpl[T]) Chain(o iterator.Iterable[T]) Stream[T] {
 	return &streamImpl[T]{iter: internal.Chain[T](self.iter, o)}
 }
 
+func (self *streamImpl[T]) Map(transformer delegate.Transform[T, T]) Stream[T] {
+	return &streamImpl[T]{iter: internal.Map(self.iter, transformer)}
+}
+
 func (self *streamImpl[T]) Filter(predicate delegate.Predicate[T]) Stream[T] {
 	return &streamImpl[T]{iter: internal.Filter(self.iter, predicate)}
 }
@@ -111,16 +115,4 @@ func (self *streamImpl[T]) Advancing(step uint) Stream[T] {
 
 func (self *streamImpl[T]) IsSorted(ord delegate.Ord[T]) bool {
 	return internal.IsSorted(self.iter, ord)
-}
-
-type parStreamImpl[T any] struct {
-	iter iterator.Iterator[T]
-}
-
-func ParFromIterator[T any](iter iterator.Iterator[T]) Stream[T] {
-	return &streamImpl[T]{iter: iter}
-}
-
-func ParFromIterable[T any](iterable iterator.Iterable[T]) Stream[T] {
-	return ParFromIterator(iterable.Iter())
 }

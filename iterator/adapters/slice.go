@@ -12,8 +12,9 @@ type sliceIter[T any] struct {
 
 func (self *sliceIter[T]) Next() optional.Optional[T] {
 	if self.iterIndex < len(self.elements) {
+		currentIndex := self.iterIndex
 		self.iterIndex++
-		return optional.Some(self.elements[self.iterIndex-1])
+		return optional.Some(self.elements[currentIndex])
 	}
 	return optional.None[T]()
 }

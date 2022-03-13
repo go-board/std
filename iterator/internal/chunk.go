@@ -28,5 +28,5 @@ func (self *chunkIter[T, TS]) Next() optional.Optional[TS] {
 }
 
 func Chunk[T any](iter iterator.Iterator[T], n uint) iterator.Iterator[[]T] {
-	return &chunkIter[T]{iter: iter, chunkSize: n}
+	return &chunkIter[T, []T]{iter: iter, chunkSize: n}
 }

@@ -13,6 +13,7 @@ type Stream[T any] interface {
 	Once(predicate delegate.Predicate[T]) bool
 	None(predicate delegate.Predicate[T]) bool
 	Chain(o iterator.Iterable[T]) Stream[T]
+	Map(transformer delegate.Transform[T, T]) Stream[T]
 	Filter(predicate delegate.Predicate[T]) Stream[T]
 	Reduce(reduce delegate.Function2[T, T, T]) optional.Optional[T]
 	Flatten(flatten delegate.Transform[T, iterator.Iterator[T]]) Stream[T]

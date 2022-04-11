@@ -64,3 +64,11 @@ func (self Result[Ok]) IfErr(consume delegate.Consumer1[error]) {
 		consume(self.Error())
 	}
 }
+
+func (self Result[Ok]) Match(consumeOk delegate.Consumer1[Ok], consumeErr delegate.Consumer1[error]) {
+	if self.IsErr() {
+		consumeErr(self.Error())
+	} else {
+		consumeOk(self.Value())
+	}
+}

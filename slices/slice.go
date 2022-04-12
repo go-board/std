@@ -89,30 +89,24 @@ func Contains[T comparable](slice []T, v T) bool {
 	return ContainsBy(slice, v, func(t1, t2 T) bool { return t1 == t2 })
 }
 
-func MaxBy[T any](slice []T, cmp func(T, T) bool) optional.Optional[T] {
-	if len(slice) == 0 {
-		return optional.None[T]()
-	}
-	max := slice[0]
-	for _, v := range slice {
-		if cmp(v, max) {
-			max = v
+func MaxBy[T any](slice []T, less func(T, T) bool) optional.Optional[T] {
+	return Reduce(slice, func(a, b T) T {
+		if less(a, b) {
+			return b
+		} else {
+			return a
 		}
-	}
-	return optional.Some(max)
+	})
 }
 
-func MinBy[T any](slice []T, cmp func(T, T) bool) optional.Optional[T] {
-	if len(slice) == 0 {
-		return optional.None[T]()
-	}
-	min := slice[0]
-	for _, v := range slice {
-		if cmp(min, v) {
-			min = v
+func MinBy[T any](slice []T, less func(T, T) bool) optional.Optional[T] {
+	return Reduce(slice, func(a, b T) T {
+		if less(a, b) {
+			return a
+		} else {
+			return b
 		}
-	}
-	return optional.Some(min)
+	})
 }
 
 func Nth[T any](slice []T, n int) optional.Optional[T] {

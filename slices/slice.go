@@ -36,12 +36,19 @@ func Filter[T any](slice []T, f func(T) bool) []T {
 	return result
 }
 
-func Reduce[T any](slice []T, f func(T, T) T) T {
-	result := slice[0]
-	for i := 1; i < len(slice); i++ {
-		result = f(result, slice[i])
+func Fold[T, A any](slice []T, initial A, accumulator func(A, T) A) A {
+	result := initial
+	for _, v := range slice {
+		result = accumulator(result, v)
 	}
 	return result
+}
+
+func Reduce[T any](slice []T, f func(T, T) T) optional.Optional[T] {
+	if len(slice) == 0 {
+		return optional.None[T]()
+	}
+	return optional.Some(Fold(slice[0:], slice[0], f))
 }
 
 func Any[T any](slice []T, f func(T) bool) bool {
@@ -65,40 +72,24 @@ func None[T any](slice []T, f func(T) bool) bool {
 	return !Any(slice, f)
 }
 
-func Find[T any](slice []T, f func(T) bool) (int, bool) {
-	for i, v := range slice {
-		if f(v) {
-			return i, true
-		}
-	}
-	return 0, false
-}
-
-func FindIndex[T any](slice []T, f func(T) bool) int {
-	for i, v := range slice {
-		if f(v) {
+func FindIndexBy[T any](slice []T, v T, eq func(T, T) bool) int {
+	for i, vv := range slice {
+		if eq(v, vv) {
 			return i
 		}
 	}
 	return -1
 }
 
-func Contains[T any](slice []T, v T, cmp func(T, T) bool) bool {
-	return FindIndex(slice, func(x T) bool {
-		return cmp(x, v)
-	}) != -1
+func ContainsBy[T any](slice []T, v T, cmp func(T, T) bool) bool {
+	return Any(slice, func(t T) bool { return cmp(t, v) })
 }
 
-func ContainsAny[T any](slice []T, v []T, cmp func(T, T) bool) bool {
-	for _, x := range v {
-		if Contains(slice, x, cmp) {
-			return true
-		}
-	}
-	return false
+func Contains[T comparable](slice []T, v T) bool {
+	return ContainsBy(slice, v, func(t1, t2 T) bool { return t1 == t2 })
 }
 
-func Max[T any](slice []T, cmp func(T, T) bool) optional.Optional[T] {
+func MaxBy[T any](slice []T, cmp func(T, T) bool) optional.Optional[T] {
 	if len(slice) == 0 {
 		return optional.None[T]()
 	}
@@ -111,7 +102,7 @@ func Max[T any](slice []T, cmp func(T, T) bool) optional.Optional[T] {
 	return optional.Some(max)
 }
 
-func Min[T any](slice []T, cmp func(T, T) bool) optional.Optional[T] {
+func MinBy[T any](slice []T, cmp func(T, T) bool) optional.Optional[T] {
 	if len(slice) == 0 {
 		return optional.None[T]()
 	}
@@ -131,7 +122,7 @@ func Nth[T any](slice []T, n int) optional.Optional[T] {
 	if n < 0 || n >= len(slice) {
 		return optional.None[T]()
 	}
-	return optional.Some[T](slice[n])
+	return optional.Some(slice[n])
 }
 
 func Flatten[T any](slice [][]T) []T {
@@ -142,7 +133,7 @@ func Flatten[T any](slice [][]T) []T {
 	return result
 }
 
-func Equal[T any](slice1 []T, slice2 []T, eq func(T, T) bool) bool {
+func EqualBy[T any](slice1 []T, slice2 []T, eq func(T, T) bool) bool {
 	if len(slice1) != len(slice2) {
 		return false
 	}
@@ -152,4 +143,8 @@ func Equal[T any](slice1 []T, slice2 []T, eq func(T, T) bool) bool {
 		}
 	}
 	return true
+}
+
+func Equal[T comparable](slice1 []T, slice2 []T) bool {
+	return EqualBy(slice1, slice2, func(a, b T) bool { return a == b })
 }

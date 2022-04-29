@@ -42,12 +42,12 @@ var _ Hasher = (*baseHasher)(nil)
 
 func (self *baseHasher) Finish() uint64         { return self.x.Sum64() }
 func (self *baseHasher) Write(data []byte)      { binary.Write(self.x, self.byteOrder, data) }
-func (self *baseHasher) WriteInt(i int)         { binary.Write(self.x, self.byteOrder, i) }
+func (self *baseHasher) WriteInt(i int)         { binary.Write(self.x, self.byteOrder, int64(i)) }
 func (self *baseHasher) WriteInt8(i int8)       { binary.Write(self.x, self.byteOrder, i) }
 func (self *baseHasher) WriteInt16(i int16)     { binary.Write(self.x, self.byteOrder, i) }
 func (self *baseHasher) WriteInt32(i int32)     { binary.Write(self.x, self.byteOrder, i) }
 func (self *baseHasher) WriteInt64(i int64)     { binary.Write(self.x, self.byteOrder, i) }
-func (self *baseHasher) WriteUint(i uint)       { binary.Write(self.x, self.byteOrder, i) }
+func (self *baseHasher) WriteUint(i uint)       { binary.Write(self.x, self.byteOrder, uint64(i)) }
 func (self *baseHasher) WriteUint8(i uint8)     { binary.Write(self.x, self.byteOrder, i) }
 func (self *baseHasher) WriteUint16(i uint16)   { binary.Write(self.x, self.byteOrder, i) }
 func (self *baseHasher) WriteUint32(i uint32)   { binary.Write(self.x, self.byteOrder, i) }

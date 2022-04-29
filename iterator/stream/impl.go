@@ -11,6 +11,8 @@ type streamImpl[T any] struct {
 	iter iterator.Iterator[T]
 }
 
+var _ Stream[any] = (*streamImpl[any])(nil)
+
 func FromIterator[T any](iter iterator.Iterator[T]) Stream[T] {
 	return &streamImpl[T]{iter: iter}
 }

@@ -6,10 +6,13 @@ import (
 	"github.com/go-board/std/result"
 )
 
+// Service is the interface that provides the business logic for the service.
 type Service[Req, Resp any] interface {
+	// Call is the entry point for the service.
 	Call(ctx context.Context, req Req) result.Result[Resp]
 }
 
+// ServiceFn is the function type that implements the Service interface.
 type ServiceFn[Req, Resp any] func(context.Context, Req) result.Result[Resp]
 
 func (self ServiceFn[Req, Resp]) Call(ctx context.Context, req Req) result.Result[Resp] {

@@ -1,5 +1,6 @@
 package tuple
 
+// Pair is a tuple of two elements.
 type Pair[A, B any] struct {
 	a A
 	b B
@@ -20,6 +21,7 @@ func PairFromB[A, B any](b B) Pair[A, B] {
 func (self Pair[A, B]) First() A  { return self.a }
 func (self Pair[A, B]) Second() B { return self.b }
 
+// Triple is a tuple of three elements.
 type Triple[A, B, C any] struct {
 	a A
 	b B
@@ -34,6 +36,7 @@ func (self Triple[A, B, C]) First() A  { return self.a }
 func (self Triple[A, B, C]) Second() B { return self.b }
 func (self Triple[A, B, C]) Third() C  { return self.c }
 
+// Tuple4 is a tuple of four elements.
 type Tuple4[A, B, C, D any] struct {
 	a A
 	b B
@@ -50,6 +53,7 @@ func (self Tuple4[A, B, C, D]) Second() B { return self.b }
 func (self Tuple4[A, B, C, D]) Third() C  { return self.c }
 func (self Tuple4[A, B, C, D]) Fourth() D { return self.d }
 
+// Tuple5 is a tuple of five elements.
 type Tuple5[A, B, C, D, E any] struct {
 	a A
 	b B

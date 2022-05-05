@@ -4,6 +4,7 @@ import (
 	"sort"
 
 	"github.com/go-board/std/optional"
+	"golang.org/x/exp/constraints"
 )
 
 type sortBy[T any] struct {
@@ -15,9 +16,24 @@ func (s sortBy[T]) Len() int           { return len(s.inner) }
 func (s sortBy[T]) Less(i, j int) bool { return s.less(s.inner[i], s.inner[j]) }
 func (s sortBy[T]) Swap(i, j int)      { s.inner[i], s.inner[j] = s.inner[j], s.inner[i] }
 
-// SortBy sort the given slice in-place by the given less function.
+// SortBy sorts the given slice in-place by the given less function.
 func SortBy[T any](slice []T, less func(a, b T) bool) {
 	sort.Sort(sortBy[T]{less: less, inner: slice})
+}
+
+// Sort sorts the given slice in-place.
+func Sort[T constraints.Ordered](slice []T) {
+	SortBy(slice, func(a, b T) bool { return a < b })
+}
+
+// IsSortedBy returns true if the given slice is sorted by the given less function.
+func IsSortedBy[T any](slice []T, less func(a, b T) bool) bool {
+	return sort.IsSorted(sortBy[T]{less: less, inner: slice})
+}
+
+// IsSorted returns true if the given slice is sorted.
+func IsSorted[T constraints.Ordered](slice []T) bool {
+	return IsSortedBy(slice, func(a, b T) bool { return a < b })
 }
 
 // Map returns a new slice with the results of applying the given function to each element in the given slice.
@@ -191,4 +207,35 @@ func Equal[T comparable](slice1 []T, slice2 []T) bool {
 // DeepClone returns a new slice with the same elements as the given slice.
 func DeepClone[T any](slice []T, clone func(T) T) []T {
 	return Map(slice, clone)
+}
+
+// ToSet returns a new set with the given slice.
+func ToSet[T comparable](slice []T) map[T]struct{} {
+	result := make(map[T]struct{}, len(slice))
+	for _, v := range slice {
+		result[v] = struct{}{}
+	}
+	return result
+}
+
+// IntersectionBy returns a new slice with the elements that are in both given slices by the given function.
+func IntersectionBy[T any](slice1 []T, slice2 []T, eq func(T, T) bool) []T {
+	result := make([]T, 0, len(slice1))
+	for _, v := range slice1 {
+		if ContainsBy(slice2, v, eq) {
+			result = append(result, v)
+		}
+	}
+	return result
+}
+
+// DifferenceBy returns a new slice with the elements that are in the first slice but not in the second by the given function.
+func DifferenceBy[T any](slice1 []T, slice2 []T, eq func(T, T) bool) []T {
+	result := make([]T, 0, len(slice1))
+	for _, v := range slice1 {
+		if !ContainsBy(slice2, v, eq) {
+			result = append(result, v)
+		}
+	}
+	return result
 }

@@ -1,14 +1,25 @@
 package result
 
 import (
+	"fmt"
+
 	"github.com/go-board/std/delegate"
 )
 
+// Result is a type that represents either a value or an error.
 type Result[Ok any] struct {
 	data Ok
 	err  error
 }
 
+func (self Result[Ok]) String() string {
+	if self.IsOk() {
+		return fmt.Sprintf("Ok(%+v)", self.data)
+	}
+	return fmt.Sprintf("Err(%+v)", self.err)
+}
+
+// Of creates a new Result from a value.
 func Of[Ok any](data Ok, err error) Result[Ok] {
 	return Result[Ok]{data, err}
 }

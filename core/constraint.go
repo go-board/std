@@ -12,8 +12,4 @@ type Unsigned interface {
 }
 type Integer interface{ Signed | Unsigned }
 type Number interface{ Integer | Float | Complex }
-
-func Default[T Primitive]() T {
-	var p T
-	return p
-}
+type Ordered interface{ Integer | Float | ~string }

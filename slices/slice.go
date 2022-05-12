@@ -3,6 +3,8 @@ package slices
 import (
 	"sort"
 
+	"github.com/go-board/std/clone"
+	"github.com/go-board/std/core"
 	"github.com/go-board/std/optional"
 	"golang.org/x/exp/constraints"
 )
@@ -77,7 +79,7 @@ func Reduce[T any](slice []T, f func(T, T) T) optional.Optional[T] {
 	if len(slice) == 0 {
 		return optional.None[T]()
 	}
-	return optional.Some(Fold(slice[0:], slice[0], f))
+	return optional.Some(Fold(slice[1:], slice[0], f))
 }
 
 // Any returns true if any element in the given slice satisfies the given predicate.
@@ -115,6 +117,11 @@ func FindIndexBy[T any](slice []T, v T, eq func(T, T) bool) int {
 	return -1
 }
 
+// FindIndex returns the index of the first element in the given slice that satisfies the given predicate.
+func FindIndex[T comparable](slice []T, v T) int {
+	return FindIndexBy(slice, v, func(a, b T) bool { return a == b })
+}
+
 // ContainsBy returns true if the given slice contains an element that satisfies the given predicate.
 func ContainsBy[T any](slice []T, v T, cmp func(T, T) bool) bool {
 	return Any(slice, func(t T) bool { return cmp(t, v) })
@@ -125,7 +132,7 @@ func Contains[T comparable](slice []T, v T) bool {
 	return ContainsBy(slice, v, func(t1, t2 T) bool { return t1 == t2 })
 }
 
-// MaxBy returns the maximium element in the given slice that satisfies the given function.
+// MaxBy returns the maximum element in the given slice that satisfies the given function.
 func MaxBy[T any](slice []T, less func(T, T) bool) optional.Optional[T] {
 	return Reduce(slice, func(a, b T) T {
 		if less(a, b) {
@@ -136,7 +143,12 @@ func MaxBy[T any](slice []T, less func(T, T) bool) optional.Optional[T] {
 	})
 }
 
-// MinBy returns the minimium element in the given slice that satisfies the given function.
+// Max returns the maximum element in the given slice.
+func Max[T core.Ordered](slice []T) optional.Optional[T] {
+	return MaxBy(slice, func(a, b T) bool { return a < b })
+}
+
+// MinBy returns the minimum element in the given slice that satisfies the given function.
 func MinBy[T any](slice []T, less func(T, T) bool) optional.Optional[T] {
 	return Reduce(slice, func(a, b T) T {
 		if less(a, b) {
@@ -145,6 +157,11 @@ func MinBy[T any](slice []T, less func(T, T) bool) optional.Optional[T] {
 			return b
 		}
 	})
+}
+
+// Min returns the minimum element in the given slice.
+func Min[T core.Ordered](slice []T) optional.Optional[T] {
+	return MinBy(slice, func(a, b T) bool { return a < b })
 }
 
 // Nth returns the nth element in the given slice.
@@ -158,6 +175,15 @@ func Nth[T any](slice []T, n int) optional.Optional[T] {
 	return optional.Some(slice[n])
 }
 
+// FlattenBy returns a new slice with all elements in the given slice and all elements in the given slices.
+func FlattenBy[T, S any](slice []T, f func(T) []S) []S {
+	result := make([]S, 0, len(slice))
+	for _, v := range slice {
+		result = append(result, f(v)...)
+	}
+	return result
+}
+
 // Flatten returns a new slice with all elements in the given slice and all elements in all sub-slices.
 func Flatten[T any](slice [][]T) []T {
 	result := make([]T, 0, len(slice))
@@ -169,9 +195,14 @@ func Flatten[T any](slice [][]T) []T {
 
 // Chunk returns a new slice with the given slice split into smaller slices of the given size.
 func Chunk[T any](slice []T, chunk int) [][]T {
+	size := len(slice)
 	result := make([][]T, 0, len(slice)/chunk+1)
-	for i := 0; i < len(slice); i += chunk {
-		result = append(result, slice[i:i+chunk])
+	for i := 0; i < size; i += chunk {
+		if i+chunk > size {
+			result = append(result, slice[i:])
+		} else {
+			result = append(result, slice[i:i+chunk])
+		}
 	}
 	return result
 }
@@ -204,9 +235,19 @@ func Equal[T comparable](slice1 []T, slice2 []T) bool {
 	return EqualBy(slice1, slice2, func(a, b T) bool { return a == b })
 }
 
-// DeepClone returns a new slice with the same elements as the given slice.
-func DeepClone[T any](slice []T, clone func(T) T) []T {
+// DeepCloneBy returns a new slice with the cloned elements as the given slice.
+func DeepCloneBy[T any](slice []T, clone func(T) T) []T {
 	return Map(slice, clone)
+}
+
+// DeepClone returns a new slice with the cloned elements.
+func DeepClone[T clone.Cloneable[T]](slice []T) []T {
+	return DeepCloneBy(slice, func(t T) T { return t.Clone() })
+}
+
+// Clone returns a new slice with the same elements as the given slice.
+func Clone[T any](slice []T) []T {
+	return DeepCloneBy(slice, func(t T) T { return t })
 }
 
 // ToSet returns a new set with the given slice.
@@ -222,6 +263,7 @@ func ToSet[T comparable](slice []T) map[T]struct{} {
 func IntersectionBy[T any](slice1 []T, slice2 []T, eq func(T, T) bool) []T {
 	result := make([]T, 0, len(slice1))
 	for _, v := range slice1 {
+		// TODO: optimize use O(1) lookup
 		if ContainsBy(slice2, v, eq) {
 			result = append(result, v)
 		}
@@ -233,6 +275,7 @@ func IntersectionBy[T any](slice1 []T, slice2 []T, eq func(T, T) bool) []T {
 func DifferenceBy[T any](slice1 []T, slice2 []T, eq func(T, T) bool) []T {
 	result := make([]T, 0, len(slice1))
 	for _, v := range slice1 {
+		// TODO: optimize use O(1) lookup
 		if !ContainsBy(slice2, v, eq) {
 			result = append(result, v)
 		}

@@ -1,9 +1,17 @@
 package tuple
 
+import (
+	"fmt"
+)
+
 // Pair is a tuple of two elements.
 type Pair[A, B any] struct {
 	a A
 	b B
+}
+
+func (self Pair[A, B]) String() string {
+	return fmt.Sprintf("Pair(%+v, %+v)", self.a, self.b)
 }
 
 func NewPair[A, B any](a A, b B) Pair[A, B] {
@@ -28,6 +36,10 @@ type Triple[A, B, C any] struct {
 	c C
 }
 
+func (self Triple[A, B, C]) String() string {
+	return fmt.Sprintf("Triple(%+v, %+v, %+v)", self.a, self.b, self.c)
+}
+
 func NewTriple[A, B, C any](a A, b B, c C) Triple[A, B, C] {
 	return Triple[A, B, C]{a: a, b: b, c: c}
 }
@@ -42,6 +54,10 @@ type Tuple4[A, B, C, D any] struct {
 	b B
 	c C
 	d D
+}
+
+func (self Tuple4[A, B, C, D]) String() string {
+	return fmt.Sprintf("Tuple4(%+v, %+v, %+v, %+v)", self.a, self.b, self.c, self.d)
 }
 
 func NewTuple4[A, B, C, D any](a A, b B, c C, d D) Tuple4[A, B, C, D] {
@@ -60,6 +76,10 @@ type Tuple5[A, B, C, D, E any] struct {
 	c C
 	d D
 	e E
+}
+
+func (self Tuple5[A, B, C, D, E]) String() string {
+	return fmt.Sprintf("Tuple5(%+v, %+v, %+v, %+v, %+v)", self.a, self.b, self.c, self.d, self.e)
 }
 
 func NewTuple5[A, B, C, D, E any](a A, b B, c C, d D, e E) Tuple5[A, B, C, D, E] {

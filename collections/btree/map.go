@@ -4,7 +4,6 @@ import (
 	"github.com/go-board/std/clone"
 	"github.com/go-board/std/delegate"
 	"github.com/go-board/std/iterator"
-	"github.com/go-board/std/iterator/stream"
 	"github.com/go-board/std/optional"
 	"github.com/go-board/std/tuple"
 	"github.com/tidwall/btree"
@@ -84,9 +83,13 @@ func (self *TreeMap[TKey, TValue]) Clone() *TreeMap[TKey, TValue] {
 // Reversed returns a reversed copy of the TreeMap.
 func (self *TreeMap[TKey, TValue]) Reversed() *TreeMap[TKey, TValue] {
 	newTree := NewTreeMap[TKey, TValue](func(t1, t2 TKey) bool { return !self.less(t1, t2) })
-	stream.FromIterable[MapEntry[TKey, TValue]](self).ForEach(func(entry MapEntry[TKey, TValue]) {
-		newTree.Put(entry.Key(), entry.Value())
-	})
+	// stream.FromIterable[MapEntry[TKey, TValue]](self).ForEach(func(entry MapEntry[TKey, TValue]) {
+	// 	newTree.Put(entry.Key(), entry.Value())
+	// })
+	iter := self.inner.Iter()
+	for iter.Next() {
+		newTree.Put(iter.Item().Key(), iter.Item().Value())
+	}
 	return newTree
 }
 

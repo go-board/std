@@ -6,7 +6,6 @@ import (
 	"github.com/go-board/std/clone"
 	"github.com/go-board/std/core"
 	"github.com/go-board/std/optional"
-	"golang.org/x/exp/constraints"
 )
 
 type sortBy[T any] struct {
@@ -24,7 +23,7 @@ func SortBy[T any](slice []T, less func(a, b T) bool) {
 }
 
 // Sort sorts the given slice in-place.
-func Sort[T constraints.Ordered](slice []T) {
+func Sort[T core.Ordered](slice []T) {
 	SortBy(slice, func(a, b T) bool { return a < b })
 }
 
@@ -34,7 +33,7 @@ func IsSortedBy[T any](slice []T, less func(a, b T) bool) bool {
 }
 
 // IsSorted returns true if the given slice is sorted.
-func IsSorted[T constraints.Ordered](slice []T) bool {
+func IsSorted[T core.Ordered](slice []T) bool {
 	return IsSortedBy(slice, func(a, b T) bool { return a < b })
 }
 

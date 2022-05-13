@@ -104,22 +104,6 @@ func (self HashSet[TKey]) ToSlice() []TKey {
 	return keys
 }
 
-// Equals returns true if the given set is equal to this set.
-func (self HashSet[TKey]) Equals(other HashSet[TKey]) bool {
-	if other == nil {
-		return false
-	}
-	if other.Size() != self.Size() {
-		return false
-	}
-	for key := range self {
-		if !other.Contains(key) {
-			return false
-		}
-	}
-	return true
-}
-
 // Clone returns a copy of the set.
 func (self HashSet[TKey]) Clone() HashSet[TKey] {
 	other := NewHashSet[TKey]()
@@ -210,6 +194,9 @@ func (self HashSet[TKey]) SymmetricDifference(other HashSet[TKey]) HashSet[TKey]
 
 // Equal returns true if the given set is equal to this set.
 func (self HashSet[TKey]) Equal(other HashSet[TKey]) bool {
+	if other == nil || self == nil {
+		return false
+	}
 	if self.Size() != other.Size() {
 		return false
 	}

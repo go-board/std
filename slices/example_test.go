@@ -115,6 +115,15 @@ func ExampleForEach() {
 	// 3
 }
 
+func ExampleForEachIndexed() {
+	slice := []int{1, 2, 3}
+	slices.ForEachIndexed(slice, func(i int, v int) { fmt.Println(i, v) })
+	// Output:
+	// 1 0
+	// 2 1
+	// 3 2
+}
+
 func ExampleFilter() {
 	slice := []int{1, 2, 3}
 	result := slices.Filter(slice, func(i int) bool { return i > 1 })
@@ -390,7 +399,7 @@ func ExampleGroupBy() {
 		{Id: 2, Name: "Jack"},
 		{Id: 4, Name: "Bob"},
 	}
-	result := slices.GroupBy(slice, func(u user) int64 { return u.Id })
+	result := slices.GroupBy(slice, func(u user) (int64, user) { return u.Id, u })
 	fmt.Println(result)
 	// Output:
 	// map[1:[{1 John}] 2:[{2 Jane} {2 Jack}] 4:[{4 Bob}]]
@@ -481,7 +490,7 @@ func ExampleClone() {
 
 func ExampleToSet() {
 	slice := []int{1, 2, 3}
-	result := slices.ToSet(slice)
+	result := slices.ToHashSet(slice)
 	fmt.Println(result)
 	// Output:
 	// map[1:{} 2:{} 3:{}]
@@ -489,7 +498,7 @@ func ExampleToSet() {
 
 func ExampleToSet_duplicate() {
 	slice := []int{1, 2, 3, 3}
-	result := slices.ToSet(slice)
+	result := slices.ToHashSet(slice)
 	fmt.Println(result)
 	// Output:
 	// map[1:{} 2:{} 3:{}]

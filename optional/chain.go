@@ -2,7 +2,6 @@ package optional
 
 import (
 	"github.com/go-board/std/clone"
-	"github.com/go-board/std/delegate"
 )
 
 func Clone[T clone.Cloneable[T]](opt Optional[T]) Optional[T] {
@@ -12,7 +11,7 @@ func Clone[T clone.Cloneable[T]](opt Optional[T]) Optional[T] {
 	return None[T]()
 }
 
-func Map[A, B any](opt Optional[A], mapFn delegate.Function1[A, B]) Optional[B] {
+func Map[A, B any](opt Optional[A], mapFn func(A) B) Optional[B] {
 	if opt.IsSome() {
 		return Some(mapFn(opt.Value()))
 	}

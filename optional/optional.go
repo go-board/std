@@ -2,8 +2,6 @@ package optional
 
 import (
 	"fmt"
-
-	"github.com/go-board/std/delegate"
 )
 
 // Optional is a value that may or may not be present.
@@ -68,20 +66,20 @@ func (self Optional[T]) OrElse(defaultValue T) T {
 	return defaultValue
 }
 
-func (self Optional[T]) IfPresent(consume delegate.Consumer1[T]) {
+func (self Optional[T]) IfPresent(consume func(T)) {
 	if self.IsSome() {
 		consume(self.Value())
 	}
 }
 
-func (self Optional[T]) Filter(fn delegate.Predicate[T]) Optional[T] {
+func (self Optional[T]) Filter(fn func(T) bool) Optional[T] {
 	if self.IsSome() && fn(self.Value()) {
 		return Some(self.Value())
 	}
 	return None[T]()
 }
 
-func (self Optional[T]) Map(mapFn delegate.Function1[T, T]) Optional[T] {
+func (self Optional[T]) Map(mapFn func(T) T) Optional[T] {
 	return Map(self, mapFn)
 }
 

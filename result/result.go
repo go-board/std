@@ -2,8 +2,6 @@ package result
 
 import (
 	"fmt"
-
-	"github.com/go-board/std/delegate"
 )
 
 // Result is a type that represents either a value or an error.
@@ -64,19 +62,19 @@ func (self Result[Ok]) Error() error {
 	panic("unwrap ok value")
 }
 
-func (self Result[Ok]) IfOk(consume delegate.Consumer1[Ok]) {
+func (self Result[Ok]) IfOk(consume func(Ok)) {
 	if self.IsOk() {
 		consume(self.Value())
 	}
 }
 
-func (self Result[Ok]) IfErr(consume delegate.Consumer1[error]) {
+func (self Result[Ok]) IfErr(consume func(error)) {
 	if self.IsErr() {
 		consume(self.Error())
 	}
 }
 
-func (self Result[Ok]) Match(consumeOk delegate.Consumer1[Ok], consumeErr delegate.Consumer1[error]) {
+func (self Result[Ok]) Match(consumeOk func(Ok), consumeErr func(error)) {
 	if self.IsErr() {
 		consumeErr(self.Error())
 	} else {

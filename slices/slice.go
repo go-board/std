@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/go-board/std/clone"
+	"github.com/go-board/std/cond"
 	"github.com/go-board/std/core"
 	"github.com/go-board/std/optional"
 	"github.com/go-board/std/result"
@@ -85,7 +86,7 @@ func DifferenceBy[T any](lhs []T, rhs []T, eq func(T, T) bool) []T {
 
 // Distinct returns a new slice with the given slice without duplicates.
 func Distinct[T comparable](slice []T) []T {
-	return sets.NewFromSlice(slice).ToSlice()
+	return sets.NewHashSet(slice...).ToSlice()
 }
 
 // DistinctBy returns a new slice with the distinct elements of the given slice by the given function.
@@ -293,11 +294,7 @@ func Max[T core.Ordered](slice []T) optional.Optional[T] {
 // MaxBy returns the maximum element in the given slice that satisfies the given function.
 func MaxBy[T any](slice []T, less func(T, T) bool) optional.Optional[T] {
 	return Reduce(slice, func(lhs, rhs T) T {
-		if less(lhs, rhs) {
-			return rhs
-		} else {
-			return lhs
-		}
+		return cond.Ternary(less(lhs, rhs), rhs, lhs)
 	})
 }
 
@@ -309,11 +306,7 @@ func Min[T core.Ordered](slice []T) optional.Optional[T] {
 // MinBy returns the minimum element in the given slice that satisfies the given function.
 func MinBy[T any](slice []T, less func(T, T) bool) optional.Optional[T] {
 	return Reduce(slice, func(lhs, rhs T) T {
-		if less(lhs, rhs) {
-			return lhs
-		} else {
-			return rhs
-		}
+		return cond.Ternary(less(lhs, rhs), lhs, rhs)
 	})
 }
 
@@ -380,13 +373,14 @@ func (s sortBy[T]) Less(i, j int) bool { return s.less(s.inner[i], s.inner[j]) }
 func (s sortBy[T]) Swap(i, j int)      { s.inner[i], s.inner[j] = s.inner[j], s.inner[i] }
 
 // SortBy sorts the given slice in-place by the given less function.
-func SortBy[T any](slice []T, less func(lhs, rhs T) bool) {
+func SortBy[T any](slice []T, less func(lhs, rhs T) bool) []T {
 	sort.Sort(sortBy[T]{less: less, inner: slice})
+	return slice
 }
 
 // Sort sorts the given slice in-place.
-func Sort[T core.Ordered](slice []T) {
-	SortBy(slice, func(lhs, rhs T) bool { return lhs < rhs })
+func Sort[T core.Ordered](slice []T) []T {
+	return SortBy(slice, func(lhs, rhs T) bool { return lhs < rhs })
 }
 
 // ToHashMap converts the given slice to a map by the given key function.
@@ -414,5 +408,5 @@ func ToIndexedMap[T any](slice []T) map[int]T {
 
 // ToHashSet returns a new set with the given slice.
 func ToHashSet[T comparable](slice []T) map[T]struct{} {
-	return sets.NewFromSlice(slice)
+	return sets.NewHashSet(slice...).ToMap()
 }

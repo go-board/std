@@ -260,12 +260,10 @@ func TestIndex(t *testing.T) {
 		c.Assert(notFound.IsNone(), qt.IsTrue)
 	})
 	a.Run("contains", func(c *qt.C) {
-
 		slice := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 		c.Assert(slices.Contains(slice, 2), qt.IsTrue)
 
 		c.Assert(slices.Contains(slice, 11), qt.IsFalse)
-
 	})
 
 	a.Run("containsBy", func(c *qt.C) {
@@ -289,7 +287,6 @@ func TestNth(t *testing.T) {
 	a.Assert(in.Value(), qt.Equals, 3)
 	notIn := slices.Nth([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, 11)
 	a.Assert(notIn.IsNone(), qt.IsTrue)
-
 }
 
 func TestFlatten(t *testing.T) {

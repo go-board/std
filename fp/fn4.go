@@ -4,6 +4,9 @@ package fp
 type Function4[A, B, C, D, R any] interface {
 	Apply(A, B, C, D) R
 	Curry() func(A) func(B) func(C) func(D) R
+	Partial1(A) Function3[B, C, D, R]
+	Partial2(A, B) Function2[C, D, R]
+	Partial3(A, B, C) Function1[D, R]
 }
 
 // Fn4 is a function that takes four arguments.
@@ -17,6 +20,20 @@ func (f Fn4[A, B, C, D, R]) Curry() func(A) func(B) func(C) func(D) R {
 			return func(c C) func(D) R { return func(d D) R { return f.Apply(a, b, c, d) } }
 		}
 	}
+}
+
+func (f Fn4[A, B, C, D, R]) Partial1(a A) Function3[B, C, D, R] {
+	return Fn3[B, C, D, R](func(b B, c C, d D) R {
+		return f.Apply(a, b, c, d)
+	})
+}
+
+func (f Fn4[A, B, C, D, R]) Partial2(a A, b B) Function2[C, D, R] {
+	return Fn2[C, D, R](func(c C, d D) R { return f.Apply(a, b, c, d) })
+}
+
+func (f Fn4[A, B, C, D, R]) Partial3(a A, b B, c C) Function1[D, R] {
+	return Fn1[D, R](func(d D) R { return f.Apply(a, b, c, d) })
 }
 
 // Apply4 is a function that takes four arguments.

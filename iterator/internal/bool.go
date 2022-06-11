@@ -1,11 +1,11 @@
 package internal
 
 import (
-	"github.com/go-board/std/delegate"
+	"github.com/go-board/std/cmp"
 	"github.com/go-board/std/iterator"
 )
 
-func All[T any](iter iterator.Iterator[T], predicate delegate.Predicate[T]) bool {
+func All[T any](iter iterator.Iterator[T], predicate func(T) bool) bool {
 	for s := iter.Next(); s.IsSome(); s = iter.Next() {
 		if !predicate(s.Value()) {
 			return false
@@ -14,7 +14,7 @@ func All[T any](iter iterator.Iterator[T], predicate delegate.Predicate[T]) bool
 	return true
 }
 
-func Any[T any](iter iterator.Iterator[T], predicate delegate.Predicate[T]) bool {
+func Any[T any](iter iterator.Iterator[T], predicate func(T) bool) bool {
 	for s := iter.Next(); s.IsSome(); s = iter.Next() {
 		if predicate(s.Value()) {
 			return true
@@ -23,11 +23,11 @@ func Any[T any](iter iterator.Iterator[T], predicate delegate.Predicate[T]) bool
 	return false
 }
 
-func Once[T any](iter iterator.Iterator[T], predicate delegate.Predicate[T]) bool {
+func Once[T any](iter iterator.Iterator[T], predicate func(T) bool) bool {
 	return matchCount(iter, predicate, 1)
 }
 
-func matchCount[T any](iter iterator.Iterator[T], predicate delegate.Predicate[T], n uint) bool {
+func matchCount[T any](iter iterator.Iterator[T], predicate func(T) bool, n uint) bool {
 	hitCnt := uint(0)
 	for s := iter.Next(); s.IsSome(); s = iter.Next() {
 		if predicate(s.Value()) {
@@ -37,7 +37,7 @@ func matchCount[T any](iter iterator.Iterator[T], predicate delegate.Predicate[T
 	return hitCnt == n
 }
 
-func None[T any](iter iterator.Iterator[T], predicate delegate.Predicate[T]) bool {
+func None[T any](iter iterator.Iterator[T], predicate func(T) bool) bool {
 	for s := iter.Next(); s.IsSome(); s = iter.Next() {
 		if predicate(s.Value()) {
 			return false
@@ -46,7 +46,7 @@ func None[T any](iter iterator.Iterator[T], predicate delegate.Predicate[T]) boo
 	return true
 }
 
-func ContainsBy[T any](iter iterator.Iterator[T], target T, eq delegate.Equal[T]) bool {
+func ContainsBy[T any](iter iterator.Iterator[T], target T, eq cmp.EqFunc[T]) bool {
 	for s := iter.Next(); s.IsSome(); s = iter.Next() {
 		if eq(s.Value(), target) {
 			return true

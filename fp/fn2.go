@@ -4,6 +4,7 @@ package fp
 type Function2[A, B, R any] interface {
 	Apply(A, B) R
 	Curry() func(A) func(B) R
+	Partial1(A) Function1[B, R]
 }
 
 // Fn2 is a function that takes two arguments.
@@ -13,6 +14,10 @@ func (f Fn2[A, B, R]) Apply(a A, b B) R { return f(a, b) }
 
 func (f Fn2[A, B, R]) Curry() func(A) func(B) R {
 	return func(a A) func(B) R { return func(b B) R { return f.Apply(a, b) } }
+}
+
+func (f Fn2[A, B, R]) Partial1(a A) Function1[B, R] {
+	return Fn1[B, R](func(b B) R { return f.Apply(a, b) })
 }
 
 // Apply2 is a function that takes two arguments.

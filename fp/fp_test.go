@@ -11,7 +11,7 @@ func TestCurry(t *testing.T) {
 	a := qt.New(t)
 	a.Run("curry1", func(c *qt.C) {
 		f := func(a int) int { return a + 2 }
-		curryAdd1 := Curry1[int, int](f)
+		curryAdd1 := Curry1(f)
 		c.Assert(curryAdd1(1), qt.Equals, 3)
 	})
 	a.Run("curry2", func(t *qt.C) {
@@ -164,4 +164,24 @@ func TestState(t *testing.T) {
 		setter(func(prevState int) int { return prevState + 1 })
 		c.Assert(getter(), qt.Equals, 2)
 	})
+}
+
+func TestPartial(t *testing.T) {
+	a := qt.New(t)
+	a.Run("partial1", func(c *qt.C) {
+		m := Fn2[func(int) int, []int, []int](map_[int, int]).Partial1(func(i int) int { return i * 2 })
+		n := Fn2[func(int) string, []int, []string](map_[int, string]).Partial1(strconv.Itoa)
+		x := Compose2(m.(Fn1[[]int, []int]), n.(Fn1[[]int, []string]))
+		y := ComposeFunction2(m, n)
+		c.Assert(x([]int{1, 2, 3, 4, 5}), qt.DeepEquals, []string{"2", "4", "6", "8", "10"})
+		c.Assert(y.Apply([]int{1, 2, 3, 4, 5}), qt.DeepEquals, []string{"2", "4", "6", "8", "10"})
+	})
+}
+
+func map_[T, U any](f func(T) U, slice []T) []U {
+	res := make([]U, 0, len(slice))
+	for _, s := range slice {
+		res = append(res, f(s))
+	}
+	return res
 }

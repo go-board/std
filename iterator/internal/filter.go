@@ -1,14 +1,13 @@
 package internal
 
 import (
-	"github.com/go-board/std/delegate"
 	"github.com/go-board/std/iterator"
 	"github.com/go-board/std/optional"
 )
 
 type filterIter[T any] struct {
 	iter   iterator.Iterator[T]
-	filter delegate.Predicate[T]
+	filter func(T) bool
 }
 
 func (self *filterIter[T]) Next() optional.Optional[T] {
@@ -20,7 +19,7 @@ func (self *filterIter[T]) Next() optional.Optional[T] {
 	return optional.None[T]()
 }
 
-func Filter[T any](iter iterator.Iterator[T], filter delegate.Predicate[T]) iterator.Iterator[T] {
+func Filter[T any](iter iterator.Iterator[T], filter func(T) bool) iterator.Iterator[T] {
 	return &filterIter[T]{iter, filter}
 }
 
@@ -80,7 +79,7 @@ func Skip[T any](iter iterator.Iterator[T], n uint) iterator.Iterator[T] {
 
 type takeWhileIter[T any] struct {
 	iter      iterator.Iterator[T]
-	predicate delegate.Predicate[T]
+	predicate func(T) bool
 }
 
 func (self *takeWhileIter[T]) Next() optional.Optional[T] {
@@ -92,13 +91,13 @@ func (self *takeWhileIter[T]) Next() optional.Optional[T] {
 	return optional.None[T]()
 }
 
-func TakeWhile[T any](iter iterator.Iterator[T], predicate delegate.Predicate[T]) iterator.Iterator[T] {
+func TakeWhile[T any](iter iterator.Iterator[T], predicate func(T) bool) iterator.Iterator[T] {
 	return &takeWhileIter[T]{iter, predicate}
 }
 
 type skipWhileIter[T any] struct {
 	iter      iterator.Iterator[T]
-	predicate delegate.Predicate[T]
+	predicate func(T) bool
 }
 
 func (self *skipWhileIter[T]) Next() optional.Optional[T] {
@@ -109,7 +108,7 @@ func (self *skipWhileIter[T]) Next() optional.Optional[T] {
 	}
 	return optional.None[T]()
 }
-func SkipWhile[T any](iter iterator.Iterator[T], predicate delegate.Predicate[T]) iterator.Iterator[T] {
+func SkipWhile[T any](iter iterator.Iterator[T], predicate func(T) bool) iterator.Iterator[T] {
 	return &skipWhileIter[T]{iter, predicate}
 }
 

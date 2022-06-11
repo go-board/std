@@ -1,34 +1,34 @@
 package internal
 
 import (
-	"github.com/go-board/std/delegate"
+	"github.com/go-board/std/cmp"
 	"github.com/go-board/std/iterator"
 	"github.com/go-board/std/optional"
 )
 
-func MaxBy[T any](iter iterator.Iterator[T], ord delegate.Ord[T]) optional.Optional[T] {
+func MaxBy[T any](iter iterator.Iterator[T], ord cmp.OrdFunc[T]) optional.Optional[T] {
 	return Reduce(iter, func(a, b T) T {
-		if ord(a, b) > 0 {
+		if ord(a, b).IsLe() {
 			return a
 		}
 		return b
 	})
 }
 
-func MinBy[T any](iter iterator.Iterator[T], ord delegate.Ord[T]) optional.Optional[T] {
+func MinBy[T any](iter iterator.Iterator[T], ord cmp.OrdFunc[T]) optional.Optional[T] {
 	return Reduce(iter, func(a, b T) T {
-		if ord(a, b) < 0 {
+		if ord(a, b).IsLe() {
 			return a
 		}
 		return b
 	})
 }
 
-func SumBy[T any](iter iterator.Iterator[T], sum delegate.Function2[T, T, T]) optional.Optional[T] {
+func SumBy[T any](iter iterator.Iterator[T], sum func(T, T) T) optional.Optional[T] {
 	return Reduce(iter, sum)
 }
 
-func ProductBy[T any](iter iterator.Iterator[T], product delegate.Function2[T, T, T]) optional.Optional[T] {
+func ProductBy[T any](iter iterator.Iterator[T], product func(T, T) T) optional.Optional[T] {
 	return Reduce(iter, product)
 }
 
@@ -36,26 +36,21 @@ type Numbric interface {
 	int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | uintptr | float32 | float64
 }
 
+func ord[T Numbric](lhs, rhs T) cmp.Ordering {
+	if lhs > rhs {
+		return cmp.Greater
+	} else if lhs < rhs {
+		return cmp.Less
+	}
+	return cmp.Equal
+}
+
 func Max[T Numbric](iter iterator.Iterator[T]) optional.Optional[T] {
-	return MaxBy(iter, func(t1, t2 T) int {
-		if t1 > t2 {
-			return 1
-		} else if t1 < t2 {
-			return -1
-		}
-		return 0
-	})
+	return MaxBy(iter, ord[T])
 }
 
 func Min[T Numbric](iter iterator.Iterator[T]) optional.Optional[T] {
-	return MinBy(iter, func(t1, t2 T) int {
-		if t1 > t2 {
-			return 1
-		} else if t1 < t2 {
-			return -1
-		}
-		return 0
-	})
+	return MinBy(iter, ord[T])
 }
 
 func Sum[T Numbric](iter iterator.Iterator[T]) optional.Optional[T] {

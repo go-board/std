@@ -1,14 +1,13 @@
 package internal
 
 import (
-	"github.com/go-board/std/delegate"
 	"github.com/go-board/std/iterator"
 	"github.com/go-board/std/optional"
 )
 
 type inspectIter[T any] struct {
 	iter    iterator.Iterator[T]
-	inspect delegate.Consumer1[T]
+	inspect func(T)
 }
 
 func (self *inspectIter[T]) Next() optional.Optional[T] {
@@ -21,14 +20,14 @@ func (self *inspectIter[T]) Next() optional.Optional[T] {
 
 func Inspect[T any](
 	iter iterator.Iterator[T],
-	inspect delegate.Consumer1[T],
+	inspect func(T),
 ) iterator.Iterator[T] {
 	return &inspectIter[T]{iter, inspect}
 }
 
 type inspectIterUntil[T any] struct {
 	iter    iterator.Iterator[T]
-	inspect delegate.Predicate[T]
+	inspect func(T) bool
 }
 
 func (self *inspectIterUntil[T]) Next() optional.Optional[T] {
@@ -41,7 +40,7 @@ func (self *inspectIterUntil[T]) Next() optional.Optional[T] {
 
 func InspectUntil[T any](
 	iter iterator.Iterator[T],
-	inspect delegate.Predicate[T],
+	inspect func(T) bool,
 ) iterator.Iterator[T] {
 	return &inspectIterUntil[T]{iter, inspect}
 }

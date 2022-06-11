@@ -144,13 +144,13 @@ func FilterIndexed[T any](slice []T, f func(T, int) bool) []T {
 // FindIndex returns the index of the first element in the given slice that satisfies the given predicate.
 // Deprecated: use Index instead.
 func FindIndex[T comparable](slice []T, v T) int {
-	return Index(slice, v).OrElse(-1)
+	return Index(slice, v).ValueOr(-1)
 }
 
 // FindIndexBy returns the index of the first element in the given slice that satisfies the given predicate.
 // Deprecated: use IndexBy instead.
 func FindIndexBy[T any](slice []T, v T, eq func(T, T) bool) int {
-	return IndexBy(slice, v, eq).OrElse(-1)
+	return IndexBy(slice, v, eq).ValueOr(-1)
 }
 
 // Flatten returns a new slice with all elements in the given slice and all elements in all sub-slices.

@@ -63,7 +63,7 @@ func (self *TreeMap[TKey, TValue]) Get(key TKey) optional.Optional[TValue] {
 
 // GetDefault returns the value for the given key or the default value.
 func (self *TreeMap[TKey, TValue]) GetDefault(key TKey, value TValue) TValue {
-	return self.Get(key).OrElse(value)
+	return self.Get(key).ValueOr(value)
 }
 
 // GetEntry returns the MapEntry for the given key.

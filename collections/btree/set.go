@@ -2,7 +2,6 @@ package btree
 
 import (
 	"github.com/go-board/std/clone"
-	"github.com/go-board/std/delegate"
 	"github.com/go-board/std/iterator"
 	"github.com/go-board/std/iterator/stream"
 	"github.com/go-board/std/optional"
@@ -20,7 +19,7 @@ var (
 )
 
 // NewTreeSet creates a new TreeSet.
-func NewTreeSet[TElement any](less delegate.Lt[TElement]) *TreeSet[TElement] {
+func NewTreeSet[TElement any](less func(TElement, TElement) bool) *TreeSet[TElement] {
 	return &TreeSet[TElement]{inner: btree.NewGeneric(less)}
 }
 

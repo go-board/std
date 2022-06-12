@@ -33,7 +33,6 @@ go get -u github.com/go-board/std
     - [queue](https://github.com/go-board/std/blob/master/collections/queue) double ended queue
 - [cond](https://github.com/go-board/std/blob/master/cond) conditional operator
 - [core](https://github.com/go-board/std/blob/master/core) core types & constraints
-- [~~delegate~~](https://github.com/go-board/std/blob/master/delegate) [DEPRECATED] delegate function signature
 - [hash](https://github.com/go-board/std/blob/master/hash) hash a object
 - [iterator](https://github.com/go-board/std/blob/master/iterator) iterators
     - [adapters](https://github.com/go-board/std/blob/master/iterator/adapters) adapter to create iterators & streams

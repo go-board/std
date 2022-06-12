@@ -2,8 +2,6 @@ package lazy
 
 import (
 	"sync"
-
-	"github.com/go-board/std/delegate"
 )
 
 // Lazy is a lazy value.
@@ -11,9 +9,9 @@ type Lazy[T any] struct {
 	compute func() T
 }
 
-func NewLazy[T any](compute func() T) *Lazy[T]            { return &Lazy[T]{compute} }
-func (self *Lazy[T]) Get() T                              { return self.compute() }
-func (self *Lazy[T]) With(consumer delegate.Consumer1[T]) { consumer(self.Get()) }
+func NewLazy[T any](compute func() T) *Lazy[T] { return &Lazy[T]{compute} }
+func (self *Lazy[T]) Get() T                   { return self.compute() }
+func (self *Lazy[T]) With(consumer func(T))    { consumer(self.Get()) }
 
 // OnceLazy is a lazy value that is computed only once.
 type OnceLazy[T any] struct {
@@ -31,6 +29,6 @@ func (self *OnceLazy[T]) Get() T {
 	return self.inner
 }
 
-func (self *OnceLazy[T]) With(consumer delegate.Consumer1[T]) {
+func (self *OnceLazy[T]) With(consumer func(T)) {
 	consumer(self.Get())
 }

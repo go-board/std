@@ -2,7 +2,6 @@ package btree
 
 import (
 	"github.com/go-board/std/clone"
-	"github.com/go-board/std/delegate"
 	"github.com/go-board/std/iterator"
 	"github.com/go-board/std/optional"
 	"github.com/go-board/std/tuple"
@@ -25,7 +24,7 @@ func (self MapEntry[K, V]) Value() V { return self.inner.Second() }
 
 // TreeMap is a map based on a B-Tree.
 type TreeMap[TKey, TValue any] struct {
-	less  delegate.Lt[TKey]
+	less  func(TKey, TKey) bool
 	inner *btree.Generic[MapEntry[TKey, TValue]]
 }
 
@@ -35,7 +34,7 @@ var (
 )
 
 // NewTreeMap creates a new TreeMap.
-func NewTreeMap[TKey, TValue any](less delegate.Lt[TKey]) *TreeMap[TKey, TValue] {
+func NewTreeMap[TKey, TValue any](less func(TKey, TKey) bool) *TreeMap[TKey, TValue] {
 	entryLessFn := func(a, b MapEntry[TKey, TValue]) bool { return less(a.Key(), b.Key()) }
 	return &TreeMap[TKey, TValue]{inner: btree.NewGeneric(entryLessFn)}
 }

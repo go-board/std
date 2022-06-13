@@ -8,18 +8,28 @@ type DefaultHashMap[K comparable, V any] struct {
 }
 
 // NewDefaultHashMap returns a new DefaultHashMap.
-func NewDefaultHashMap[K comparable, V any](factory func(K) V) *DefaultHashMap[K, V] {
-	return &DefaultHashMap[K, V]{factory: factory, inner: map[K]V{}}
+func NewDefaultHashMap[K comparable, V any](factory func(K) V) DefaultHashMap[K, V] {
+	return DefaultHashMap[K, V]{factory: factory, inner: map[K]V{}}
 }
 
-// Has returns true if the map contains the key.
-func (m *DefaultHashMap[K, V]) Has(key K) bool {
+// Contains returns true if the map contains the key.
+func (m DefaultHashMap[K, V]) Contains(key K) bool {
 	_, ok := m.inner[key]
 	return ok
 }
 
+// ContainsAll returns true if the map contains all the given keys.
+func (m DefaultHashMap[K, V]) ContainsAll(keys []K) bool {
+	for _, key := range keys {
+		if !m.Contains(key) {
+			return false
+		}
+	}
+	return true
+}
+
 // Get returns the value for the given key.
-func (m *DefaultHashMap[K, V]) Get(key K) V {
+func (m DefaultHashMap[K, V]) Get(key K) V {
 	v, ok := m.inner[key]
 	if !ok {
 		v = m.factory(key)
@@ -29,18 +39,32 @@ func (m *DefaultHashMap[K, V]) Get(key K) V {
 }
 
 // Set sets the value for the given key.
-func (m *DefaultHashMap[K, V]) Set(key K, val V) {
+func (m DefaultHashMap[K, V]) Set(key K, val V) {
 	m.inner[key] = val
 }
 
 // Del deletes the value for the given key.
-func (m *DefaultHashMap[K, V]) Del(key K) {
+func (m DefaultHashMap[K, V]) Del(key K) {
 	delete(m.inner, key)
 }
 
 // Range calls the given function for each key-value pair in the map.
-func (m *DefaultHashMap[K, V]) Range(f func(K, V)) {
+func (m DefaultHashMap[K, V]) Range(f func(K, V)) {
 	for k, v := range m.inner {
 		f(k, v)
 	}
+}
+
+// Size returns the number of key-value pairs in the map.
+func (m DefaultHashMap[K, V]) Size() int {
+	return len(m.inner)
+}
+
+// Clone returns a copy of the map.
+func (m DefaultHashMap[K, V]) Clone() DefaultHashMap[K, V] {
+	inner := make(map[K]V)
+	for k, v := range m.inner {
+		inner[k] = v
+	}
+	return DefaultHashMap[K, V]{factory: m.factory, inner: inner}
 }

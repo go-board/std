@@ -8,12 +8,27 @@ import (
 	"github.com/go-board/std/maps"
 )
 
-func TestDefaultHashMap_Has(t *testing.T) {
+func TestDefaultHashMap_Contains(t *testing.T) {
 	m := maps.NewDefaultHashMap(func(k string) string { return k })
 	m.Set("a", "a")
 	a := quicktest.New(t)
-	a.Assert(m.Has("a"), quicktest.IsTrue)
-	a.Assert(m.Has("b"), quicktest.IsFalse)
+	a.Assert(m.Contains("a"), quicktest.IsTrue)
+	a.Assert(m.Contains("b"), quicktest.IsFalse)
+}
+
+func TestDefaulsHashMap_ContainsAll(t *testing.T) {
+	testCases := map[string]string{
+		"a": "a",
+		"b": "b",
+		"c": "c",
+	}
+	m := maps.NewDefaultHashMap(func(k string) string { return k })
+	for key, value := range testCases {
+		m.Set(key, value)
+	}
+	a := quicktest.New(t)
+	a.Assert(m.ContainsAll([]string{"a", "b", "c"}), quicktest.IsTrue)
+	a.Assert(m.ContainsAll([]string{"a", "b", "c", "d"}), quicktest.IsFalse)
 }
 
 func TestDefaultHashMap_Get(t *testing.T) {
@@ -43,4 +58,37 @@ func TestDefaultHashMap_Range(t *testing.T) {
 	m.Range(func(key, val string) {
 		a.Assert(val, quicktest.Equals, strings.Repeat(key, 2))
 	})
+}
+
+func TestDefaultHashMap_Clone(t *testing.T) {
+	testCases := map[string]string{
+		"a": "aa",
+		"b": "bb",
+	}
+	m := maps.NewDefaultHashMap(func(k string) string { return k })
+	for key, value := range testCases {
+		m.Set(key, value)
+	}
+	a := quicktest.New(t)
+	m2 := m.Clone()
+	a.Assert(m2.Size(), quicktest.Equals, 2)
+	m2.Range(func(key, val string) {
+		a.Assert(val, quicktest.Equals, strings.Repeat(key, 2))
+	})
+}
+
+func TestDefaultHashMap_Delete(t *testing.T) {
+	testCases := map[string]string{
+		"a": "aa",
+		"b": "bb",
+	}
+	m := maps.NewDefaultHashMap(func(k string) string { return k })
+	for key, value := range testCases {
+		m.Set(key, value)
+	}
+	a := quicktest.New(t)
+	m.Del("a")
+	a.Assert(m.Size(), quicktest.Equals, 1)
+	a.Assert(m.Contains("a"), quicktest.IsFalse)
+	a.Assert(m.Get("b"), quicktest.Equals, "bb")
 }

@@ -17,10 +17,10 @@ func NewMapEntry[TKey, TValue any](key TKey, value TValue) MapEntry[TKey, TValue
 }
 
 // Key returns the key of the MapEntry.
-func (self MapEntry[K, V]) Key() K { return self.inner.First() }
+func (self MapEntry[K, V]) Key() K { return self.inner.First }
 
 // Value returns the value of the MapEntry.
-func (self MapEntry[K, V]) Value() V { return self.inner.Second() }
+func (self MapEntry[K, V]) Value() V { return self.inner.Second }
 
 // TreeMap is a map based on a B-Tree.
 type TreeMap[TKey, TValue any] struct {
@@ -52,7 +52,7 @@ func (self *TreeMap[TKey, TValue]) PutEntry(entry MapEntry[TKey, TValue]) {
 // Get returns the value for the given key.
 func (self *TreeMap[TKey, TValue]) Get(key TKey) optional.Optional[TValue] {
 	entry, ok := self.inner.Get(MapEntry[TKey, TValue]{
-		inner: tuple.PairFromA[TKey, TValue](key),
+		inner: tuple.Pair[TKey, TValue]{First: key},
 	})
 	if ok {
 		return optional.Some(entry.Value())
@@ -95,7 +95,7 @@ func (self *TreeMap[TKey, TValue]) Reversed() *TreeMap[TKey, TValue] {
 // ContainsKey returns true if the TreeMap contains the given key.
 func (self *TreeMap[TKey, TValue]) ContainsKey(key TKey) bool {
 	_, ok := self.inner.Get(MapEntry[TKey, TValue]{
-		inner: tuple.PairFromA[TKey, TValue](key),
+		inner: tuple.Pair[TKey, TValue]{First: key},
 	})
 	return ok
 }
@@ -103,7 +103,7 @@ func (self *TreeMap[TKey, TValue]) ContainsKey(key TKey) bool {
 // Remove removes the MapEntry for the given key.
 func (self *TreeMap[TKey, TValue]) Remove(key TKey) {
 	self.inner.Delete(MapEntry[TKey, TValue]{
-		inner: tuple.PairFromA[TKey, TValue](key),
+		inner: tuple.Pair[TKey, TValue]{First: key},
 	})
 }
 
@@ -129,9 +129,9 @@ func (self *TreeMap[TKey, TValue]) PopLast() optional.Optional[MapEntry[TKey, TV
 
 // IterRange returns an iterator over the entries in the map that are within the range from
 func (self *TreeMap[TKey, TValue]) IterRange(from, to TKey, iter func(e MapEntry[TKey, TValue])) {
-	stopEntry := MapEntry[TKey, TValue]{inner: tuple.PairFromA[TKey, TValue](to)}
+	stopEntry := MapEntry[TKey, TValue]{inner: tuple.Pair[TKey, TValue]{First: to}}
 	self.inner.Ascend(MapEntry[TKey, TValue]{
-		inner: tuple.PairFromA[TKey, TValue](from),
+		inner: tuple.Pair[TKey, TValue]{First: from},
 	}, func(e MapEntry[TKey, TValue]) bool {
 		if !self.inner.Less(e, stopEntry) {
 			return false

@@ -19,6 +19,10 @@ func (self *sliceIter[T]) Next() optional.Optional[T] {
 	return optional.None[T]()
 }
 
+func (self *sliceIter[T]) SizeHint() (uint, optional.Optional[uint]) {
+	return 0, optional.Some(uint(len(self.elements)))
+}
+
 func OfSlice[T any](eles ...T) iterator.Iterator[T] {
 	return &sliceIter[T]{elements: eles}
 }

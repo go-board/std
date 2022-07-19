@@ -1,4 +1,4 @@
-package internal
+package ops
 
 import (
 	"github.com/go-board/std/cmp"
@@ -38,21 +38,11 @@ func matchCount[T any](iter iterator.Iterator[T], predicate func(T) bool, n uint
 }
 
 func None[T any](iter iterator.Iterator[T], predicate func(T) bool) bool {
-	for s := iter.Next(); s.IsSome(); s = iter.Next() {
-		if predicate(s.Value()) {
-			return false
-		}
-	}
-	return true
+	return All(iter, func(t T) bool { return !predicate(t) })
 }
 
 func ContainsBy[T any](iter iterator.Iterator[T], target T, eq cmp.EqFunc[T]) bool {
-	for s := iter.Next(); s.IsSome(); s = iter.Next() {
-		if eq(s.Value(), target) {
-			return true
-		}
-	}
-	return false
+	return Any(iter, func(t T) bool { return eq(t, target) })
 }
 
 func Contains[T comparable](iter iterator.Iterator[T], target T) bool {

@@ -1,4 +1,4 @@
-package internal
+package ops
 
 import (
 	"github.com/go-board/std/cmp"

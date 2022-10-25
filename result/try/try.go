@@ -1,6 +1,7 @@
 package try
 
 import (
+	"errors"
 	"runtime"
 	"strconv"
 )
@@ -61,4 +62,23 @@ func CatchFunc(fn func(e *Error)) {
 			panic(err)
 		}
 	}
+}
+
+// ErrNilValue indicate both co-value and err are nil
+var ErrNilValue = errors.New("err: nil value")
+
+// HandleNillable process cornor case of error handling.
+// Patch fucking stupid lang design.
+//
+//  1. if err is not nil, return val & err
+//  2. if val is nil, return nil & ErrNilValue
+//  3. return val & nil
+func HandleNillable[T any](val *T, err error) (*T, error) {
+	if err != nil {
+		return val, err
+	}
+	if val == nil {
+		return nil, ErrNilValue
+	}
+	return val, nil
 }

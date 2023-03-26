@@ -5,6 +5,7 @@ import (
 	"github.com/go-board/std/cond"
 	"github.com/go-board/std/core"
 	"github.com/go-board/std/iterator"
+	"github.com/go-board/std/operator"
 	"github.com/go-board/std/optional"
 )
 
@@ -42,11 +43,11 @@ func Min[T core.Ordered](iter iterator.Iterator[T]) optional.Optional[T] {
 }
 
 func Sum[T core.Number](iter iterator.Iterator[T]) optional.Optional[T] {
-	return SumBy(iter, func(t1 T, t2 T) T { return t1 + t2 })
+	return SumBy(iter, operator.Add[T])
 }
 
 func Product[T core.Number](iter iterator.Iterator[T]) optional.Optional[T] {
-	return ProductBy(iter, func(t1 T, t2 T) T { return t1 * t2 })
+	return ProductBy(iter, operator.Mul[T])
 }
 
 func Nth[T any](iter iterator.Iterator[T], n uint) optional.Optional[T] {
@@ -58,4 +59,12 @@ func Nth[T any](iter iterator.Iterator[T], n uint) optional.Optional[T] {
 		}
 	}
 	return optional.None[T]()
+}
+
+func Size[T any](iter iterator.Iterator[T]) int {
+	n := 0
+	for s := iter.Next(); s.IsSome(); s = iter.Next() {
+		n++
+	}
+	return n
 }

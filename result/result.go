@@ -18,16 +18,16 @@ func (self Result[T]) String() string {
 	return fmt.Sprintf("Err(%+v)", self.err)
 }
 
-// Of create a new Result from a value or an error.
-func Of[T any](data T, err error) Result[T] { return Result[T]{data, err} }
+// FromPair create a new Result from a value or an error.
+func FromPair[T any](data T, err error) Result[T] { return Result[T]{data, err} }
 
 // Ok create a new Result from a value.
-func Ok[T any](data T) Result[T] { return Of(data, nil) }
+func Ok[T any](data T) Result[T] { return FromPair(data, nil) }
 
 // Err create a new Result from an error.
 func Err[T any](err error) Result[T] {
 	var ok T
-	return Of(ok, err)
+	return FromPair(ok, err)
 }
 
 // Errorf create a new Result from a formatted error.
@@ -135,9 +135,25 @@ func (self Result[T]) Match(onOk func(T), onErr func(error)) {
 }
 
 // AsRawParts return tuple of value ptr and error.
-func (self Result[T]) AsRawParts() (*T, error) {
+func (self Result[T]) AsRawParts() (data T, err error) {
 	if self.IsOk() {
-		return &self.data, nil
+		data = self.data
+	} else {
+		err = self.err
 	}
-	return nil, self.err
+	return
+}
+
+func Map[A, B any](result Result[A], transformer func(A) B) Result[B] {
+	if result.IsOk() {
+		return Ok(transformer(result.Value()))
+	}
+	return Err[B](result.Error())
+}
+
+func Flatten[A any](result Result[Result[A]]) Result[A] {
+	if result.IsOk() {
+		return result.data
+	}
+	return Err[A](result.err)
 }

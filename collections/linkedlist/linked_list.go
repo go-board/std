@@ -21,9 +21,9 @@ func NewLinkedList[T any]() *LinkedList[T] {
 	return &LinkedList[T]{}
 }
 
-func FromSlice[T any](eles ...T) *LinkedList[T] {
+func FromSlice[T any](elems ...T) *LinkedList[T] {
 	list := NewLinkedList[T]()
-	for _, ele := range eles {
+	for _, ele := range elems {
 		list.Append(ele)
 	}
 	return list

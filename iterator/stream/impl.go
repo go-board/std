@@ -126,7 +126,3 @@ func (self *streamImpl[T]) Last() optional.Optional[T] {
 func (self *streamImpl[T]) Advancing(step uint) Stream[T] {
 	return &streamImpl[T]{iter: ops.Advancing(self.iter, step)}
 }
-
-func (self *streamImpl[T]) IsSorted(ord cmp.OrdFunc[T]) bool {
-	return ops.IsSorted(self.iter, ord)
-}

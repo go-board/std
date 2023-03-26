@@ -60,12 +60,13 @@ func CmpByKey[A any, F func(A) K, K Ord[K]](f F, lhs, rhs A) Ordering {
 }
 
 // Order is a function that returns an Ordering of two Ordering.
-//  result table is:
-//		| lhs\rhs | Less    |  Equal  | Greater |
-//		|---------|---------|---------|---------+
-//		| Less    | Equal   | Less    | Less    |
-//		| Equal   | Greater | Equal   | Less    |
-//		| Greater | Greater | Greater | Equal   |
+//
+//	 result table is:
+//			| lhs\rhs | Less    |  Eq  | Greater |
+//			|---------|---------|---------|---------+
+//			| Less    | Eq   | Less    | Less    |
+//			| Eq   | Greater | Eq   | Less    |
+//			| Greater | Greater | Greater | Eq   |
 func Order(lhs, rhs Ordering) Ordering {
 	lhsInner, rhsInner := lhs.(order), rhs.(order)
 	return cond.Ternary(lhsInner == rhsInner, Equal, cond.Ternary(lhsInner < rhsInner, Less, Greater))

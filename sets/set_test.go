@@ -1,9 +1,11 @@
 package sets
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/frankban/quicktest"
+	"github.com/go-board/std/iterator/ops"
 )
 
 type item struct{ key int }
@@ -13,8 +15,7 @@ func (i item) Clone() item { return item{key: i.key} }
 func TestHashSet_Add(t *testing.T) {
 	a := quicktest.New(t)
 	s := NewHashSet[int]()
-	s.Add(1)
-	s.Add(2)
+	s.Add(1, 2)
 	a.Assert(s.Contains(1), quicktest.IsTrue)
 	a.Assert(s.Contains(2), quicktest.IsTrue)
 	a.Assert(s.Contains(3), quicktest.IsFalse)
@@ -23,7 +24,7 @@ func TestHashSet_Add(t *testing.T) {
 func TestHashSet_AddAll(t *testing.T) {
 	a := quicktest.New(t)
 	s := NewHashSet[int]()
-	s.AddAll([]int{1, 2})
+	s.AddAll(NewHashSet(1, 2))
 	a.Assert(s.Contains(1), quicktest.IsTrue)
 	a.Assert(s.Contains(2), quicktest.IsTrue)
 	a.Assert(s.Contains(3), quicktest.IsFalse)
@@ -271,18 +272,6 @@ func TestHashSet_Equal(t *testing.T) {
 	a.Assert(s1.Equal(s2), quicktest.IsFalse)
 }
 
-func TestDeepClone(t *testing.T) {
-	a := quicktest.New(t)
-	s1 := NewHashSet[item]()
-	s1.Add(item{key: 1})
-	s1.Add(item{key: 2})
-	s1.Add(item{key: 3})
-	s2 := DeepClone(s1)
-	a.Assert(s1.Equal(s2), quicktest.IsTrue)
-	s2.Add(item{key: 4})
-	a.Assert(s1.Equal(s2), quicktest.IsFalse)
-}
-
 func TestMap(t *testing.T) {
 	a := quicktest.New(t)
 	s1 := NewHashSet[int]()
@@ -291,4 +280,28 @@ func TestMap(t *testing.T) {
 	s1.Add(3)
 	s2 := Map(s1, func(i int) int { return i * 2 })
 	a.Assert(s2.ContainsAll([]int{2, 4, 6}), quicktest.IsTrue)
+}
+
+func TestHashSet_Iter(t *testing.T) {
+	a := quicktest.New(t)
+	s1 := NewHashSet(1, 2, 3, 4, 5)
+
+	a.Assert(ops.Size(s1.Iter()), quicktest.Equals, 5)
+}
+
+func TestHashSet_Marshal(t *testing.T) {
+	a := quicktest.New(t)
+	s := NewHashSet(5, 1, 4, 2, 3, 1, 2, 3)
+	b, err := json.Marshal(s)
+	a.Assert(err, quicktest.IsNil)
+	a.Logf("%s\n ", b)
+}
+
+func TestHashSet_UnmarshalJSON(t *testing.T) {
+	a := quicktest.New(t)
+	s := NewHashSet[int]()
+	err := json.Unmarshal([]byte(`{"1":{},"2":{},"3":{},"4":{},"5":{}}`), &s)
+	a.Assert(err, quicktest.IsNil)
+	a.Logf("%+v\n", s)
+	a.Assert(s.Equal(NewHashSet(1, 2, 3, 4, 5)), quicktest.IsTrue)
 }

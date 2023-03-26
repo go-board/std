@@ -44,24 +44,27 @@ func (o order) IsLe() bool       { return o <= 0 }
 func (o order) IsGe() bool       { return o >= 0 }
 func (o order) IsGt() bool       { return o > 0 }
 func (o order) String() string {
-	return cond.Ternary(o == 0, "Equal", cond.Ternary(o < 0, "Less", "Greater"))
+	return cond.Ternary(o == 0, "Eq", cond.Ternary(o < 0, "Less", "Greater"))
 }
 
 // PartialEq is a type that represents a partial equality comparison.
-//  see: [PartialEq](https://en.wikipedia.org/wiki/Partial_equivalence_relation)
+//
+//	see: [PartialEq](https://en.wikipedia.org/wiki/Partial_equivalence_relation)
 type PartialEq[A any] interface {
 	Eq(A) bool
 	Ne(A) bool
 }
 
 // Eq is a type that represents an equality comparison.
-//  see: [Eq](https://en.wikipedia.org/wiki/Equivalence_relation)
+//
+//	see: [Eq](https://en.wikipedia.org/wiki/Equivalence_relation)
 type Eq[A any] interface {
 	PartialEq[A]
 }
 
 // PartialOrd is a type that represents a partially ordered value.
-//  see: [PartialOrd](https://en.wikipedia.org/wiki/Partially_ordered_set)
+//
+//	see: [PartialOrd](https://en.wikipedia.org/wiki/Partially_ordered_set)
 type PartialOrd[A any] interface {
 	PartialCmp(A) optional.Optional[Ordering]
 	Lt(A) bool
@@ -71,7 +74,8 @@ type PartialOrd[A any] interface {
 }
 
 // Ord is a type that represents an ordered value.
-//  see: [Ord](https://en.wikipedia.org/wiki/Total_order)
+//
+//	see: [Ord](https://en.wikipedia.org/wiki/Total_order)
 type Ord[A any] interface {
 	Eq[A]
 	PartialOrd[A]

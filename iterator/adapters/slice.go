@@ -11,10 +11,9 @@ type sliceIter[T any] struct {
 }
 
 func (self *sliceIter[T]) Next() optional.Optional[T] {
+	self.iterIndex++
 	if self.iterIndex < len(self.elements) {
-		currentIndex := self.iterIndex
-		self.iterIndex++
-		return optional.Some(self.elements[currentIndex])
+		return optional.Some(self.elements[self.iterIndex])
 	}
 	return optional.None[T]()
 }
@@ -23,6 +22,6 @@ func (self *sliceIter[T]) SizeHint() (uint, optional.Optional[uint]) {
 	return 0, optional.Some(uint(len(self.elements)))
 }
 
-func OfSlice[T any](eles ...T) iterator.Iterator[T] {
-	return &sliceIter[T]{elements: eles}
+func OfSlice[T any](elems ...T) iterator.Iterator[T] {
+	return &sliceIter[T]{elements: elems, iterIndex: -1}
 }

@@ -1,6 +1,7 @@
 package optional
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
@@ -14,18 +15,19 @@ func (self Optional[T]) String() string {
 	return "None"
 }
 
-// From returns an Optional from a value.
-func From[T any](data T, ok bool) Optional[T] {
+// FromPair returns an Optional from a value.
+func FromPair[T any](data T, ok bool) Optional[T] {
 	if ok {
 		return Some(data)
 	}
 	return None[T]()
 }
 
-// Of returns an Optional from a value.
-func Of[T any](data *T) Optional[T] { return Optional[T]{data: data} }
+// FromPtr returns an Optional from a value.
+func FromPtr[T any](data *T) Optional[T] { return Optional[T]{data: data} }
 
 // Some returns an Optional from a value.
+// Oops!! We can't restrict T is not pointer type. Holy shit!!!
 func Some[T any](data T) Optional[T] { return Optional[T]{data: &data} }
 
 // None returns an Optional from a value.
@@ -150,4 +152,70 @@ func (self Optional[T]) Xor(opt Optional[T]) Optional[T] {
 		return Some(*opt.data)
 	}
 	return None[T]()
+}
+
+func (self Optional[T]) CloneBy(clone func(T) T) Optional[T] {
+	if self.IsNone() {
+		return None[T]()
+	}
+	return Some(clone(self.Value()))
+}
+
+func (self Optional[T]) MarshalJSON() ([]byte, error) {
+	if self.IsSome() {
+		return json.Marshal(*self.data)
+	}
+	return []byte("null"), nil
+}
+
+var _ json.Marshaler = (*Optional[any])(nil)
+
+func (self *Optional[T]) UnmarshalJSON(v []byte) error {
+	if string(v) != "null" {
+		return json.Unmarshal(v, self.data)
+	}
+	return nil
+}
+
+var _ json.Unmarshaler = (*Optional[any])(nil)
+
+type ComparableOptional[T comparable] struct {
+	Optional[T]
+}
+
+func (self ComparableOptional[T]) Eq(other ComparableOptional[T]) bool {
+	if self.IsNone() && other.IsNone() {
+		return true
+	}
+	if self.IsSome() && other.IsSome() {
+		return self.Value() == other.Value()
+	}
+	return false
+}
+
+func (self ComparableOptional[T]) Ne(other ComparableOptional[T]) bool {
+	return !self.Eq(other)
+}
+
+type FlattenOptional[T any] struct {
+	Optional[Optional[T]]
+}
+
+func (self FlattenOptional[T]) Flatten() Optional[T] {
+	if self.IsNone() {
+		return None[T]()
+	}
+	return self.Value()
+}
+
+func Map[A, B any](opt Optional[A], mapFn func(A) B) Optional[B] {
+	if opt.IsSome() {
+		return Some(mapFn(opt.Value()))
+	}
+	return None[B]()
+}
+
+func As[T any](v any) Optional[T] {
+	val, ok := v.(T)
+	return FromPair(val, ok)
 }

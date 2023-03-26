@@ -24,7 +24,7 @@ func TestOrdering(t *testing.T) {
 
 	c.Run("string", func(c *qt.C) {
 		c.Assert(cmp.Less.String(), qt.Equals, "Less")
-		c.Assert(cmp.Equal.String(), qt.Equals, "Equal")
+		c.Assert(cmp.Equal.String(), qt.Equals, "Eq")
 		c.Assert(cmp.Greater.String(), qt.Equals, "Greater")
 	})
 }

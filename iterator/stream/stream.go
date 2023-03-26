@@ -7,8 +7,9 @@ import (
 )
 
 // Stream is a lazy sequence of values of type T.
-// 	It wraps an iterator.Iterator[T] and provides a lazy access to its elements.
-// 	It also provides a way to chain operations on the stream.
+//
+//	It wraps an iterator.Iterator[T] and provides lazy access to its elements.
+//	It also provides a way to chain operations on the stream.
 type Stream[T any] interface {
 	iterator.Iterable[T]
 	// All returns true if all elements of the stream satisfy the predicate.
@@ -61,6 +62,4 @@ type Stream[T any] interface {
 	Last() optional.Optional[T]
 	// Advancing returns a new stream that is the result of advancing the current stream by the given number of elements.
 	Advancing(step uint) Stream[T]
-	// IsSorted returns true if the stream is sorted according to the given comparator.
-	IsSorted(ord cmp.OrdFunc[T]) bool
 }

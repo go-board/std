@@ -50,7 +50,7 @@ func GetNamed[T any](f *Factory, name string) result.Result[T] {
 	if !ok {
 		return result.Errorf[T](fmt.Sprintf("%T is not a valid ctor[%s]", ctorInst, typename[T]()))
 	}
-	return result.Of(realCtor.provide(f))
+	return result.FromPair(realCtor.provide(f))
 }
 
 // MustGetNamed retrieve named typed service from Factory, or panic if error

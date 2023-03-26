@@ -29,7 +29,3 @@ func EqualBy[
 
 	}
 }
-
-func IsSorted[T any](iter iterator.Iterator[T], ord cmp.OrdFunc[T]) bool {
-	return false
-}

@@ -25,7 +25,7 @@ func (self MapEntry[K, V]) Value() V { return self.inner.Second }
 // TreeMap is a map based on a B-Tree.
 type TreeMap[TKey, TValue any] struct {
 	less  func(TKey, TKey) bool
-	inner *btree.Generic[MapEntry[TKey, TValue]]
+	inner *btree.BTreeG[MapEntry[TKey, TValue]]
 }
 
 var (
@@ -36,7 +36,7 @@ var (
 // NewTreeMap creates a new TreeMap.
 func NewTreeMap[TKey, TValue any](less func(TKey, TKey) bool) *TreeMap[TKey, TValue] {
 	entryLessFn := func(a, b MapEntry[TKey, TValue]) bool { return less(a.Key(), b.Key()) }
-	return &TreeMap[TKey, TValue]{inner: btree.NewGeneric(entryLessFn)}
+	return &TreeMap[TKey, TValue]{inner: btree.NewBTreeG(entryLessFn)}
 }
 
 // Put inserts a new MapEntry.
@@ -109,22 +109,22 @@ func (self *TreeMap[TKey, TValue]) Remove(key TKey) {
 
 // First returns the first MapEntry.
 func (self *TreeMap[TKey, TValue]) First() optional.Optional[MapEntry[TKey, TValue]] {
-	return optional.From(self.inner.Min())
+	return optional.FromPair(self.inner.Min())
 }
 
 // Last returns the last MapEntry.
 func (self *TreeMap[TKey, TValue]) Last() optional.Optional[MapEntry[TKey, TValue]] {
-	return optional.From(self.inner.Max())
+	return optional.FromPair(self.inner.Max())
 }
 
 // PopFirst removes and returns the first MapEntry.
 func (self *TreeMap[TKey, TValue]) PopFirst() optional.Optional[MapEntry[TKey, TValue]] {
-	return optional.From(self.inner.PopMin())
+	return optional.FromPair(self.inner.PopMin())
 }
 
 // PopLast removes and returns the last MapEntry.
 func (self *TreeMap[TKey, TValue]) PopLast() optional.Optional[MapEntry[TKey, TValue]] {
-	return optional.From(self.inner.PopMax())
+	return optional.FromPair(self.inner.PopMax())
 }
 
 // IterRange returns an iterator over the entries in the map that are within the range from
@@ -166,7 +166,7 @@ func (self *TreeMap[TKey, TValue]) Iter() iterator.Iterator[MapEntry[TKey, TValu
 }
 
 type treeMapIter[TKey, TValue any] struct {
-	inner btree.GenericIter[MapEntry[TKey, TValue]]
+	inner btree.IterG[MapEntry[TKey, TValue]]
 }
 
 var _ iterator.Iterator[MapEntry[any, any]] = (*treeMapIter[any, any])(nil)
@@ -175,6 +175,7 @@ func (self *treeMapIter[TKey, TValue]) Next() optional.Optional[MapEntry[TKey, T
 	if self.inner.Next() {
 		return optional.Some(self.inner.Item())
 	}
+
 	return optional.None[MapEntry[TKey, TValue]]()
 }
 

@@ -10,7 +10,7 @@ import (
 
 // TreeSet is a set based on a B-Tree.
 type TreeSet[TElement any] struct {
-	inner *btree.Generic[TElement]
+	inner *btree.BTreeG[TElement]
 }
 
 var (
@@ -20,7 +20,7 @@ var (
 
 // NewTreeSet creates a new TreeSet.
 func NewTreeSet[TElement any](less func(TElement, TElement) bool) *TreeSet[TElement] {
-	return &TreeSet[TElement]{inner: btree.NewGeneric(less)}
+	return &TreeSet[TElement]{inner: btree.NewBTreeG(less)}
 }
 
 // Add adds elements to the set.
@@ -66,22 +66,22 @@ func (self *TreeSet[TElement]) Range(start, end TElement) *TreeSet[TElement] {
 
 // First returns the first element of the set.
 func (self *TreeSet[TElement]) First() optional.Optional[TElement] {
-	return optional.From(self.inner.Min())
+	return optional.FromPair(self.inner.Min())
 }
 
 // Last returns the last element of the set.
 func (self *TreeSet[TElement]) Last() optional.Optional[TElement] {
-	return optional.From(self.inner.Max())
+	return optional.FromPair(self.inner.Max())
 }
 
 // PopFirst removes and returns the first element of the set.
 func (self *TreeSet[TElement]) PopFirst() optional.Optional[TElement] {
-	return optional.From(self.inner.PopMin())
+	return optional.FromPair(self.inner.PopMin())
 }
 
 // PopLast removes and returns the last element of the set.
 func (self *TreeSet[TElement]) PopLast() optional.Optional[TElement] {
-	return optional.From(self.inner.PopMax())
+	return optional.FromPair(self.inner.PopMax())
 }
 
 // Clone returns a copy of the set.
@@ -141,7 +141,7 @@ func (self *TreeSet[TElement]) Iter() iterator.Iterator[TElement] {
 }
 
 type treeSetIter[TElement any] struct {
-	iter btree.GenericIter[TElement]
+	iter btree.IterG[TElement]
 }
 
 var _ iterator.Iterator[any] = (*treeSetIter[any])(nil)

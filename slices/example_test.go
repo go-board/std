@@ -541,3 +541,13 @@ func ExampleDifferenceBy() {
 	// Output:
 	// [{3 Jack} {4 Bob}]
 }
+
+func ExamplePartition() {
+	slice := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+	lhs, rhs := slices.Partition(slice, func(x int) bool { return x%2 == 0 })
+	fmt.Println(lhs)
+	fmt.Println(rhs)
+	// Output:
+	// [2 4 6 8 10]
+	// [1 3 5 7 9]
+}

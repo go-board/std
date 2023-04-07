@@ -1,5 +1,3 @@
-//go:build !1.21
-
 package slices
 
 import (
@@ -332,6 +330,9 @@ func None[T any](slice []T, f func(T) bool) bool {
 }
 
 // Nth returns the nth element in the given slice.
+//
+// If n is negative, it returns the last element plus one.
+// If n is greater than the length of the slice, it returns [optional.None].
 func Nth[T any](slice []T, n int) optional.Optional[T] {
 	if n < 0 {
 		n = len(slice) + n
@@ -340,6 +341,28 @@ func Nth[T any](slice []T, n int) optional.Optional[T] {
 		return optional.None[T]()
 	}
 	return optional.Some(slice[n])
+}
+
+// Partition split slice into two slices according to a predicate.
+//
+// The first slice will contain items for which the predicate returned true,
+// and the second slice will contain items for which the predicate returned false.
+//
+// For Example:
+//
+//	Partition([]int{1, 2, 3}, func(s int) bool { return s % 2 == 0 })
+//	returns: ([2], [1, 3])
+func Partition[T any](slice []T, f func(T) bool) ([]T, []T) {
+	lhs := make([]T, 0)
+	rhs := make([]T, 0)
+	for _, e := range slice {
+		if f(e) {
+			lhs = append(lhs, e)
+		} else {
+			rhs = append(rhs, e)
+		}
+	}
+	return lhs, rhs
 }
 
 // Reduce returns the result of applying the given function to each element in the given slice.
@@ -365,7 +388,7 @@ func Reverse[T any](slice []T) {
 	}
 }
 
-// Shuffle returns a new slice with the given slice shuffled.
+// Shuffle the given slice in-place.
 func Shuffle[T any](slice []T) {
 	rand.Shuffle(len(slice), func(i, j int) { slice[i], slice[j] = slice[j], slice[i] })
 }

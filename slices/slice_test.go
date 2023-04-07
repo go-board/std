@@ -4,8 +4,9 @@ import (
 	"testing"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/go-board/std/slices"
 	"github.com/google/go-cmp/cmp/cmpopts"
+
+	"github.com/go-board/std/slices"
 )
 
 type item struct {
@@ -423,5 +424,19 @@ func TestMapSet(t *testing.T) {
 			8: 9,
 			9: 10,
 		})
+	})
+}
+
+func TestPartition(t *testing.T) {
+	a := qt.New(t)
+	a.Run("int", func(c *qt.C) {
+		lhs, rhs := slices.Partition([]int{1, 2, 3, 4, 5, 6}, func(i int) bool { return i%2 == 0 })
+		c.Assert(lhs, qt.DeepEquals, []int{2, 4, 6})
+		c.Assert(rhs, qt.DeepEquals, []int{1, 3, 5})
+	})
+	a.Run("user", func(c *qt.C) {
+		lhs, rhs := slices.Partition([]user{{Id: 100}, {Id: 2}, {Id: 4000}, {Id: 5}}, func(u user) bool { return u.Id < 18 })
+		c.Assert(lhs, qt.DeepEquals, []user{{Id: 2}, {Id: 5}})
+		c.Assert(rhs, qt.DeepEquals, []user{{Id: 100}, {Id: 4000}})
 	})
 }

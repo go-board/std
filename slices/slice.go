@@ -8,10 +8,23 @@ import (
 	"github.com/go-board/std/clone"
 	"github.com/go-board/std/cond"
 	"github.com/go-board/std/core"
+	"github.com/go-board/std/iterator"
 	"github.com/go-board/std/operator"
 	"github.com/go-board/std/optional"
 	"github.com/go-board/std/result"
 )
+
+// Iter create an [iterator.Iter] that iterate over the given slice.
+func Iter[T any](slice []T) iterator.Iter[T] {
+	i := -1
+	return iterator.IterFunc[T](func() optional.Optional[T] {
+		if i < len(slice) {
+			i++
+			return optional.Some(slice[i])
+		}
+		return optional.None[T]()
+	})
+}
 
 // All returns true if all elements in the given slice satisfy the given predicate.
 func All[T any](slice []T, f func(T) bool) bool {

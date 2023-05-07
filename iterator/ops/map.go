@@ -5,19 +5,8 @@ import (
 	"github.com/go-board/std/optional"
 )
 
-type mapIter[T, U any] struct {
-	iter        iterator.Iterator[T]
-	transformer func(T) U
-}
-
-func (self *mapIter[T, U]) Next() optional.Optional[U] {
-	e := self.iter.Next()
-	if e.IsSome() {
-		return optional.Some(self.transformer(e.Value()))
-	}
-	return optional.None[U]()
-}
-
-func Map[T, U any](iter iterator.Iterator[T], transformer func(T) U) iterator.Iterator[U] {
-	return &mapIter[T, U]{iter, transformer}
+func Map[T, U any](it iterator.Iter[T], transform func(T) U) iterator.Iter[U] {
+	return iterator.IterFunc[U](func() optional.Optional[U] {
+		return optional.Map(it.Next(), transform)
+	})
 }

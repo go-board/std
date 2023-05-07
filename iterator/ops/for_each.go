@@ -4,8 +4,8 @@ import (
 	"github.com/go-board/std/iterator"
 )
 
-func ForEach[T any](iter iterator.Iterator[T], consumer func(T)) {
-	iterate := func(x T) bool { consumer(x); return true }
+func ForEach[T any](iter iterator.Iterator[T], predicate func(T)) {
+	iterate := func(x T) bool { predicate(x); return true }
 	ForEachUntil(iter, iterate)
 }
 

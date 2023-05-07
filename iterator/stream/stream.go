@@ -32,8 +32,6 @@ type Stream[T any] interface {
 	Reduce(reduce func(T, T) T) optional.Optional[T]
 	// Fold returns a value of type T that is the result of applying the given function to each element of the stream with the given initial value.
 	Fold(initial T, accumulator func(T, T) T) T
-	// Flatten returns a new stream that is the result of flattening each element in the current stream.
-	Flatten(flatten func(T) iterator.Iterator[T]) Stream[T]
 	// Inspect does something with each element of the stream. Different from ForEach, this will return the stream itself.
 	Inspect(inspect func(T)) Stream[T]
 	// MaxBy returns an optional value of type T that is the maximum element of the stream according to the given comparator.

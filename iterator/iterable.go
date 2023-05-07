@@ -4,6 +4,6 @@ type Iterable[T any] interface {
 	Iter() Iterator[T]
 }
 
-type DoubleEndedIterable[T any] interface {
-	DoubleEndedIter() DoubleEndedIterator[T]
+type PrevIterable[T any] interface {
+	PrevIter() PrevIter[T]
 }

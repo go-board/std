@@ -5,40 +5,26 @@ import (
 	"github.com/go-board/std/optional"
 )
 
-type filterIter[T any] struct {
-	iter   iterator.Iterator[T]
-	filter func(T) bool
-}
-
-func (self *filterIter[T]) Next() optional.Optional[T] {
-	for s := self.iter.Next(); s.IsSome(); s = self.iter.Next() {
-		if self.filter(s.Value()) {
-			return s
+func Filter[T any](it iterator.Iter[T], filter func(T) bool) iterator.Iter[T] {
+	return iterator.IterFunc[T](func() optional.Optional[T] {
+		for s := it.Next(); s.IsSome(); s = it.Next() {
+			if filter(s.Value()) {
+				return s
+			}
 		}
-	}
-	return optional.None[T]()
-}
-
-func Filter[T any](iter iterator.Iterator[T], filter func(T) bool) iterator.Iterator[T] {
-	return &filterIter[T]{iter, filter}
-}
-
-type mapFilterIter[T, U any] struct {
-	iter      iterator.Iterator[T]
-	mapFilter func(T) optional.Optional[U]
-}
-
-func (self *mapFilterIter[T, U]) Next() optional.Optional[U] {
-	for s := self.iter.Next(); s.IsSome(); s = self.iter.Next() {
-		if m := self.mapFilter(s.Value()); m.IsSome() {
-			return m
-		}
-	}
-	return optional.None[U]()
+		return optional.None[T]()
+	})
 }
 
 func MapFilter[T, U any](iter iterator.Iterator[T], mapFilter func(T) optional.Optional[U]) iterator.Iterator[U] {
-	return &mapFilterIter[T, U]{iter, mapFilter}
+	return iterator.IterFunc[U](func() optional.Optional[U] {
+		for s := iter.Next(); s.IsSome(); s = iter.Next() {
+			if m := mapFilter(s.Value()); m.IsSome() {
+				return m
+			}
+		}
+		return optional.None[U]()
+	})
 }
 
 type takeIter[T any] struct {
@@ -108,6 +94,7 @@ func (self *skipWhileIter[T]) Next() optional.Optional[T] {
 	}
 	return optional.None[T]()
 }
+
 func SkipWhile[T any](iter iterator.Iterator[T], predicate func(T) bool) iterator.Iterator[T] {
 	return &skipWhileIter[T]{iter, predicate}
 }

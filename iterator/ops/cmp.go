@@ -1,16 +1,16 @@
 package ops
 
 import (
-	"github.com/go-board/std/cmp"
 	"github.com/go-board/std/iterator"
+	"github.com/go-board/std/operator"
 )
 
-func EqualBy[
-	T any,
-	I iterator.Iterator[T],
-	IA iterator.Iterable[T],
-	F cmp.EqFunc[T],
-](iter I, iterable IA, eq F) bool {
+// EqualBy
+func EqualBy[T any](
+	iter iterator.Iter[T],
+	iterable iterator.Iterable[T],
+	eq func(T, T) bool,
+) bool {
 	iterB := iterable.Iter()
 	for {
 		a := iter.Next()
@@ -26,6 +26,12 @@ func EqualBy[
 			continue
 		}
 		return false
-
 	}
+}
+
+func Equal[T comparable](
+	iter iterator.Iter[T],
+	iterable iterator.Iterable[T],
+) bool {
+	return EqualBy(iter, iterable, operator.Eq[T])
 }

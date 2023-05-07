@@ -42,11 +42,11 @@ func Min[T core.Ordered](iter iterator.Iterator[T]) optional.Optional[T] {
 	return MinBy(iter, ord[T])
 }
 
-func Sum[T core.Number](iter iterator.Iterator[T]) optional.Optional[T] {
+func Sum[T core.Numeric](iter iterator.Iterator[T]) optional.Optional[T] {
 	return SumBy(iter, operator.Add[T])
 }
 
-func Product[T core.Number](iter iterator.Iterator[T]) optional.Optional[T] {
+func Product[T core.Numeric](iter iterator.Iterator[T]) optional.Optional[T] {
 	return ProductBy(iter, operator.Mul[T])
 }
 
@@ -61,6 +61,7 @@ func Nth[T any](iter iterator.Iterator[T], n uint) optional.Optional[T] {
 	return optional.None[T]()
 }
 
+// Size iterate over the [iterator.Iter] and return number of items in it.
 func Size[T any](iter iterator.Iterator[T]) int {
 	n := 0
 	for s := iter.Next(); s.IsSome(); s = iter.Next() {

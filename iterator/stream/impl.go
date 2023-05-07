@@ -12,6 +12,7 @@ type streamImpl[T any] struct{ iter iterator.Iterator[T] }
 var _ Stream[any] = (*streamImpl[any])(nil)
 
 // FromIterator returns a Stream[T] from an iterator.Iterator[T].
+// FromIterator will consume [iterator.Iterator] itself.
 func FromIterator[T any](iter iterator.Iterator[T]) Stream[T] {
 	return &streamImpl[T]{iter: iter}
 }
@@ -44,11 +45,11 @@ func (self *streamImpl[T]) Chain(o iterator.Iterable[T]) Stream[T] {
 }
 
 func (self *streamImpl[T]) Map(transformer func(T) T) Stream[T] {
-	return &streamImpl[T]{iter: ops.Map(self.iter, transformer)}
+	return &streamImpl[T]{iter: ops.Map[T](self.iter, transformer)}
 }
 
 func (self *streamImpl[T]) Filter(predicate func(T) bool) Stream[T] {
-	return &streamImpl[T]{iter: ops.Filter(self.iter, predicate)}
+	return &streamImpl[T]{iter: ops.Filter[T](self.iter, predicate)}
 }
 
 func (self *streamImpl[T]) Fold(initial T, accumulator func(T, T) T) T {
@@ -57,10 +58,6 @@ func (self *streamImpl[T]) Fold(initial T, accumulator func(T, T) T) T {
 
 func (self *streamImpl[T]) Reduce(reduce func(T, T) T) optional.Optional[T] {
 	return ops.Reduce(self.iter, reduce)
-}
-
-func (self *streamImpl[T]) Flatten(flatten func(T) iterator.Iterator[T]) Stream[T] {
-	return &streamImpl[T]{iter: ops.Flatten(self.iter, flatten)}
 }
 
 func (self *streamImpl[T]) Chunk(size int) Stream[Stream[T]] {
@@ -80,7 +77,7 @@ func (self *streamImpl[T]) MinBy(ord cmp.OrdFunc[T]) optional.Optional[T] {
 }
 
 func (self *streamImpl[T]) EqualBy(o iterator.Iterable[T], ord cmp.EqFunc[T]) bool {
-	return ops.EqualBy(self.iter, o, ord)
+	return ops.EqualBy[T](self.iter, o, ord)
 }
 
 func (self *streamImpl[T]) Collect() []T {

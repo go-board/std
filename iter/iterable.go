@@ -1,7 +1,7 @@
-package iterator
+package iter
 
 type Iterable[T any] interface {
-	Iter() Iterator[T]
+	Iter() Iter[T]
 }
 
 type PrevIterable[T any] interface {

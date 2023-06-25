@@ -8,12 +8,8 @@ import (
 
 // OnceCell is a cell which can be written to only once.
 type OnceCell[T any] struct {
-	once sync.Once
 	val  *T
-}
-
-func NewOnceCell[T any]() OnceCell[T] {
-	return OnceCell[T]{}
+	once sync.Once
 }
 
 // Get return existing one if exists, otherwise panics

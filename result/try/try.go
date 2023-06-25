@@ -2,6 +2,7 @@ package try
 
 import (
 	"errors"
+	"fmt"
 	"runtime"
 	"strconv"
 )
@@ -21,11 +22,25 @@ func (e *Error) Frame() runtime.Frame { return e.frame }
 
 func (e *Error) Unwrap() error { return e.cause }
 
-func raise(e error) {
+func Errorf(format string, args ...any) error {
+	return &Error{
+		cause: fmt.Errorf(format, args...),
+		frame: frame(3),
+	}
+}
+
+func frame(skip int) runtime.Frame {
 	pcs := [1]uintptr{}
-	runtime.Callers(3, pcs[:])
+	runtime.Callers(skip, pcs[:])
 	frame, _ := runtime.CallersFrames(pcs[:]).Next()
-	panic(&Error{cause: e, frame: frame})
+	return frame
+}
+
+func raise(e error) {
+	// pcs := [1]uintptr{}
+	// runtime.Callers(3, pcs[:])
+	// frame, _ := runtime.CallersFrames(pcs[:]).Next()
+	panic(&Error{cause: e, frame: frame(4)})
 }
 
 func Try(err error) {

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	qt "github.com/frankban/quicktest"
+	"github.com/go-board/std/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/go-board/std/slices"
@@ -15,12 +16,16 @@ type item struct {
 	Tags  []string
 }
 
+func (i item) Compare(o item) int {
+	return cmp.Compare(i.Value, o.Value)
+}
+
 func TestSort(t *testing.T) {
 	t.Run("sort_by", func(t *testing.T) {
 		t.Run("comparable", func(t *testing.T) {
 			a := qt.New(t)
 			slice := []int{1, 2, 4, 3, 9, 7, 15, 11}
-			slices.SortBy(slice, func(a, b int) bool { return a < b })
+			slices.SortBy(slice, cmp.Compare[int])
 			a.Assert(slice, qt.DeepEquals, []int{1, 2, 3, 4, 7, 9, 11, 15})
 		})
 		t.Run("any", func(t *testing.T) {
@@ -31,7 +36,7 @@ func TestSort(t *testing.T) {
 				{Value: 4, Name: "Jill", Tags: []string{"b", "c"}},
 				{Value: 1, Name: "John", Tags: []string{"a", "b"}},
 			}
-			slices.SortBy(slice, func(a, b item) bool { return a.Value < b.Value })
+			slices.SortBy(slice, item.Compare)
 			a.Assert(slice, qt.DeepEquals, []item{
 				{Value: 1, Name: "John", Tags: []string{"a", "b"}},
 				{Value: 2, Name: "Jane", Tags: []string{"a", "c"}},
@@ -56,7 +61,7 @@ func TestIsSortedBy(t *testing.T) {
 			{Value: 2, Name: "Jane", Tags: []string{"a", "c"}},
 			{Value: 3, Name: "Jack", Tags: []string{"b", "c"}},
 			{Value: 4, Name: "Jill", Tags: []string{"b", "c"}},
-		}, func(a, b item) bool { return a.Value < b.Value })
+		}, item.Compare)
 		c.Assert(sorted, qt.IsTrue)
 	})
 	a.Run("sorted", func(c *qt.C) {
@@ -227,12 +232,11 @@ func TestIndex(t *testing.T) {
 			{Value: 3, Name: "Jack", Tags: []string{"b", "c"}},
 			{Value: 4, Name: "Jill", Tags: []string{"b", "c"}},
 		}
-		by := func(lhs, rhs item) bool { return lhs.Value == rhs.Value }
-		found := slices.IndexBy(slice, item{Value: 2}, by)
+		found := slices.IndexBy(slice, func(i item) bool { return i.Value == 2 })
 		c.Assert(found.IsSome(), qt.IsTrue)
 		c.Assert(found.Value(), qt.Equals, 1)
 
-		notFound := slices.IndexBy(slice, item{Value: 11}, by)
+		notFound := slices.IndexBy(slice, func(i item) bool { return i.Value == 11 })
 		c.Assert(notFound.IsNone(), qt.IsTrue)
 	})
 	a.Run("lastIndex", func(c *qt.C) {
@@ -275,9 +279,8 @@ func TestIndex(t *testing.T) {
 			{Value: 4, Name: "Jill", Tags: []string{"b", "c"}},
 		}
 
-		by := func(lhs, rhs item) bool { return lhs.Value == rhs.Value }
-		c.Assert(slices.ContainsBy(slice, item{Value: 2}, by), qt.IsTrue)
-		c.Assert(slices.ContainsBy(slice, item{Value: 11}, by), qt.IsFalse)
+		c.Assert(slices.ContainsBy(slice, func(i item) bool { return i.Value == 2 }), qt.IsTrue)
+		c.Assert(slices.ContainsBy(slice, func(i item) bool { return i.Value == 11 }), qt.IsFalse)
 	})
 }
 

@@ -1,34 +1,51 @@
 package lazy
 
-import (
-	"sync"
-)
-
-// Lazy is a lazy value.
-type Lazy[T any] struct {
+// LazyCell is a lazy value.
+//
+// Which is initialized on the first access.
+type LazyCell[T any] struct {
 	compute func() T
+	cell    OnceCell[T]
 }
 
-func NewLazy[T any](compute func() T) *Lazy[T] { return &Lazy[T]{compute} }
-func (self *Lazy[T]) Get() T                   { return self.compute() }
-func (self *Lazy[T]) With(consumer func(T))    { consumer(self.Get()) }
-
-// OnceLazy is a lazy value that is computed only once.
-type OnceLazy[T any] struct {
-	ticket  *sync.Once
-	compute func() T
-	inner   T
+func NewLazyCell[T any](compute func() T) *LazyCell[T] {
+	return &LazyCell[T]{compute: compute, cell: OnceCell[T]{}}
 }
 
-func NewOnceLazy[T any](compute func() T) *OnceLazy[T] {
-	return &OnceLazy[T]{ticket: &sync.Once{}, compute: compute}
+// Get forces the evaluation of this lazy value and returns the computed result.
+func (self *LazyCell[T]) Get() T { return self.cell.GetOrInit(self.compute) }
+
+// Value is lazy evaluated data
+type Value[T any] interface{ Eval() T }
+
+type ptrValue[T any] struct{ ptr *T }
+
+func (p ptrValue[T]) Eval() T { return *p.ptr }
+
+func PtrOf[T any](v *T) Value[T] { return ptrValue[T]{ptr: v} }
+
+type fnValue[T any] struct{ inner func() T }
+
+func (f fnValue[T]) Eval() T { return f.inner() }
+
+func FuncOf[T any](f func() T) Value[T] { return fnValue[T]{inner: f} }
+
+type value[T any] struct{ inner T }
+
+func (v value[T]) Eval() T { return v.inner }
+
+func ValueOf[T any](v T) Value[T] { return value[T]{inner: v} }
+
+func Ternary[T any](ok bool, lhs Value[T], rhs Value[T]) T {
+	if ok {
+		return lhs.Eval()
+	}
+	return rhs.Eval()
 }
 
-func (self *OnceLazy[T]) Get() T {
-	self.ticket.Do(func() { self.inner = self.compute() })
-	return self.inner
-}
-
-func (self *OnceLazy[T]) With(consumer func(T)) {
-	consumer(self.Get())
+func TernaryValue[T any](ok Value[bool], lhs Value[T], rhs Value[T]) T {
+	if ok.Eval() {
+		return lhs.Eval()
+	}
+	return rhs.Eval()
 }

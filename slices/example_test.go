@@ -3,6 +3,7 @@ package slices_test
 import (
 	"fmt"
 
+	"github.com/go-board/std/cmp"
 	"github.com/go-board/std/slices"
 )
 
@@ -11,13 +12,17 @@ type user struct {
 	Name string `json:"Name"`
 }
 
+func (u user) Compare(o user) int {
+	return cmp.Compare(u.Id, o.Id)
+}
+
 func (u user) Clone() user {
 	return user{Id: u.Id, Name: u.Name}
 }
 
 func ExampleSortBy() {
 	slice := []int{3, 1, 2}
-	slices.SortBy(slice, func(a, b int) bool { return a < b })
+	slices.SortBy(slice, cmp.Compare[int])
 	fmt.Println(slice)
 	// Output:
 	// [1 2 3]
@@ -29,7 +34,7 @@ func ExampleSortBy_key() {
 		{Id: 1, Name: "John"},
 		{Id: 2, Name: "Jane"},
 	}
-	slices.SortBy(slice, func(a, b user) bool { return a.Id < b.Id })
+	slices.SortBy(slice, user.Compare)
 	fmt.Println(slice)
 	// Output:
 	// [{1 John} {2 Jane} {3 Jack}]
@@ -49,7 +54,7 @@ func ExampleIsSortedBy() {
 		{Id: 2, Name: "Jane"},
 		{Id: 3, Name: "Jack"},
 	}
-	isSortedBy := slices.IsSortedBy(slice, func(a, b user) bool { return a.Id < b.Id })
+	isSortedBy := slices.IsSortedBy(slice, user.Compare)
 	fmt.Println(isSortedBy)
 	// Output:
 	// true
@@ -61,7 +66,7 @@ func ExampleIsSortedBy_not() {
 		{Id: 3, Name: "Jack"},
 		{Id: 1, Name: "John"},
 	}
-	isSortedBy := slices.IsSortedBy(slice, func(a, b user) bool { return a.Id < b.Id })
+	isSortedBy := slices.IsSortedBy(slice, user.Compare)
 	fmt.Println(isSortedBy)
 	// Output:
 	// false
@@ -248,31 +253,12 @@ func ExampleNone() {
 	// true
 }
 
-func ExampleFindIndexBy() {
-	slice := []user{
-		{Id: 1, Name: "John"},
-		{Id: 2, Name: "Jane"},
-	}
-	result := slices.FindIndexBy(slice, user{Id: 2}, func(t, u user) bool { return u.Id == t.Id })
-	fmt.Println(result)
-	// Output:
-	// 1
-}
-
-func ExampleFindIndex() {
-	slice := []int{1, 2, 3}
-	result := slices.FindIndex(slice, 2)
-	fmt.Println(result)
-	// Output:
-	// 1
-}
-
 func ExampleContainsBy() {
 	slice := []user{
 		{Id: 1, Name: "John"},
 		{Id: 2, Name: "Jane"},
 	}
-	result := slices.ContainsBy(slice, user{Id: 2}, func(t, u user) bool { return u.Id == t.Id })
+	result := slices.ContainsBy(slice, func(u user) bool { return u.Id == 2 })
 	fmt.Println(result)
 	// Output:
 	// true

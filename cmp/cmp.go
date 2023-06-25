@@ -1,51 +1,38 @@
 package cmp
 
 import (
-	"fmt"
-
-	"github.com/go-board/std/cond"
 	"github.com/go-board/std/optional"
 )
 
-// private is a guard for Ordering safety.
-// when Ordering using this, it can't be implemented out this package.
-type private struct{}
+type Order int // -1, 0, 1
 
-// Ordering is a type that represents the ordering of two values.
-type Ordering interface {
-	ordering(private)
-	IsEq() bool
-	IsNe() bool
-	IsLt() bool
-	IsLe() bool
-	IsGt() bool
-	IsGe() bool
-	fmt.Stringer
+func (o Order) IsEq() bool { return o == 0 }
+func (o Order) IsNe() bool { return o != 0 }
+func (o Order) IsLt() bool { return o < 0 }
+func (o Order) IsLe() bool { return o <= 0 }
+func (o Order) IsGe() bool { return o >= 0 }
+func (o Order) IsGt() bool { return o > 0 }
+func (o Order) String() string {
+	switch {
+	case o < 0:
+		return "Less"
+	case o > 0:
+		return "Greater"
+	default:
+		return "Equal"
+	}
 }
 
 const (
-	// Less is an Ordering where a compared value is less than another
-	Less = order(-1)
+	// OrderLess is an Ordering where a compared value is less than another
+	OrderLess = Order(-1)
 
-	// Equal is an Ordering where a compared value is equal to another
-	Equal = order(0)
+	// OrderEqual is an Ordering where a compared value is equal to another
+	OrderEqual = Order(0)
 
-	// Greater is an Ordering where a compared value is greater than another
-	Greater = order(1)
+	// OrderGreater is an Ordering where a compared value is greater than another
+	OrderGreater = Order(1)
 )
-
-type order int // -1, 0, 1
-
-func (o order) ordering(private) {}
-func (o order) IsEq() bool       { return o == 0 }
-func (o order) IsNe() bool       { return o != 0 }
-func (o order) IsLt() bool       { return o < 0 }
-func (o order) IsLe() bool       { return o <= 0 }
-func (o order) IsGe() bool       { return o >= 0 }
-func (o order) IsGt() bool       { return o > 0 }
-func (o order) String() string {
-	return cond.Ternary(o == 0, "Eq", cond.Ternary(o < 0, "Less", "Greater"))
-}
 
 // PartialEq is a type that represents a partial equality comparison.
 //
@@ -66,7 +53,7 @@ type Eq[A any] interface {
 //
 //	see: [PartialOrd](https://en.wikipedia.org/wiki/Partially_ordered_set)
 type PartialOrd[A any] interface {
-	PartialCmp(A) optional.Optional[Ordering]
+	PartialCmp(A) optional.Optional[Order]
 	Lt(A) bool
 	Le(A) bool
 	Gt(A) bool
@@ -79,11 +66,5 @@ type PartialOrd[A any] interface {
 type Ord[A any] interface {
 	Eq[A]
 	PartialOrd[A]
-	Cmp(A) Ordering
+	Cmp(A) Order
 }
-
-// OrdFunc is a function that returns an Ordering.
-type OrdFunc[A any] func(lhs A, rhs A) Ordering
-
-// EqFunc is a function that returns a bool.
-type EqFunc[A any] func(lhs A, rhs A) bool

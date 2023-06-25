@@ -1,10 +1,6 @@
 package dp
 
-import (
-	"github.com/go-board/std/cmp"
-)
-
-func LcsBy[T any](left []T, right []T, eq cmp.EqFunc[T]) []T {
+func LcsBy[T any](left []T, right []T, eq func(T, T) bool) []T {
 	if len(left) == 0 || len(right) == 0 {
 		return nil
 	}

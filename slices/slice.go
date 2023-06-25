@@ -3,28 +3,15 @@ package slices
 import (
 	"errors"
 	"math/rand"
-	"sort"
 
 	"github.com/go-board/std/clone"
+	"github.com/go-board/std/cmp"
 	"github.com/go-board/std/cond"
 	"github.com/go-board/std/core"
-	"github.com/go-board/std/iterator"
 	"github.com/go-board/std/operator"
 	"github.com/go-board/std/optional"
 	"github.com/go-board/std/result"
 )
-
-// Iter create an [iterator.Iter] that iterate over the given slice.
-func Iter[T any](slice []T) iterator.Iter[T] {
-	i := -1
-	return iterator.IterFunc[T](func() optional.Optional[T] {
-		if i < len(slice) {
-			i++
-			return optional.Some(slice[i])
-		}
-		return optional.None[T]()
-	})
-}
 
 // All returns true if all elements in the given slice satisfy the given predicate.
 func All[T any](slice []T, f func(T) bool) bool {
@@ -69,16 +56,6 @@ func Clone[T any](slice []T) []T {
 	return DeepCloneBy(slice, func(t T) T { return t })
 }
 
-// Contains returns true if the given slice contains the given element.
-func Contains[T comparable](slice []T, v T) bool {
-	return Index(slice, v).IsSome()
-}
-
-// ContainsBy returns true if the given slice contains an element that satisfies the given predicate.
-func ContainsBy[T any](slice []T, v T, cmp func(T, T) bool) bool {
-	return IndexBy(slice, v, cmp).IsSome()
-}
-
 // DeepClone returns a new slice with the cloned elements.
 func DeepClone[T clone.Cloneable[T]](slice []T) []T {
 	return DeepCloneBy(slice, func(t T) T { return t.Clone() })
@@ -94,7 +71,7 @@ func DifferenceBy[T any](lhs []T, rhs []T, eq func(T, T) bool) []T {
 	res := make([]T, 0, len(lhs))
 	for _, v := range lhs {
 		// TODO: optimize use O(1) lookup
-		if !ContainsBy(rhs, v, eq) {
+		if !ContainsBy(rhs, func(t T) bool { return eq(v, t) }) {
 			res = append(res, v)
 		}
 	}
@@ -116,33 +93,19 @@ func Distinct[T comparable](slice []T) []T {
 
 // DistinctBy returns a new slice with the distinct elements of the given slice by the given function.
 func DistinctBy[T any, K comparable](slice []T, key func(T) K) []T {
-	m := make(map[K]T, len(slice))
+	m := make(map[K]T)
 	for _, v := range slice {
 		m[key(v)] = v
 	}
+	used := make(map[K]bool)
 	res := make([]T, 0, len(m))
-	for _, v := range m {
-		res = append(res, v)
-	}
-	return res
-}
-
-// Equal returns true if the given slices are equal.
-func Equal[T comparable](lhs []T, rhs []T) bool {
-	return EqualBy(lhs, rhs, operator.Eq[T])
-}
-
-// EqualBy returns true if the given slices are equal by the given function.
-func EqualBy[T any](lhs []T, rhs []T, eq func(T, T) bool) bool {
-	if len(lhs) != len(rhs) {
-		return false
-	}
-	for i, v := range lhs {
-		if !eq(v, rhs[i]) {
-			return false
+	for _, v := range slice {
+		if _, ok := used[key(v)]; !ok {
+			used[key(v)] = true
+			res = append(res, m[key(v)])
 		}
 	}
-	return true
+	return res
 }
 
 // Filter returns a new slice with all elements that satisfy the given predicate.
@@ -165,20 +128,6 @@ func FilterIndexed[T any](slice []T, f func(T, int) bool) []T {
 		}
 	}
 	return res
-}
-
-// FindIndex returns the index of the first element in the given slice that satisfies the given predicate.
-//
-// Deprecated: use Index instead.
-func FindIndex[T comparable](slice []T, v T) int {
-	return Index(slice, v).ValueOr(-1)
-}
-
-// FindIndexBy returns the index of the first element in the given slice that satisfies the given predicate.
-//
-// Deprecated: use IndexBy instead.
-func FindIndexBy[T any](slice []T, v T, eq func(T, T) bool) int {
-	return IndexBy(slice, v, eq).ValueOr(-1)
 }
 
 // Flatten returns a new slice with all elements in the given slice and all elements in all sub-slices.
@@ -239,27 +188,12 @@ func GroupBy[T any, TKey comparable, TValue any](slice []T, group func(T) (TKey,
 	return res
 }
 
-// Index returns the index of the first element in the given slice that same with the given element.
-func Index[T comparable](slice []T, v T) optional.Optional[int] {
-	return IndexBy(slice, v, operator.Eq[T])
-}
-
-// IndexBy returns the index of the first element in the given slice that satisfies the given predicate.
-func IndexBy[T any](slice []T, v T, eq func(T, T) bool) optional.Optional[int] {
-	for i, vv := range slice {
-		if eq(v, vv) {
-			return optional.Some(i)
-		}
-	}
-	return optional.None[int]()
-}
-
 // IntersectionBy returns a new slice with the elements that are in both given slices by the given function.
 func IntersectionBy[T any](lhs []T, rhs []T, eq func(T, T) bool) []T {
 	res := make([]T, 0, len(lhs))
 	for _, v := range lhs {
 		// TODO: optimize use O(1) lookup
-		if ContainsBy(rhs, v, eq) {
+		if ContainsBy(rhs, func(t T) bool { return eq(t, v) }) {
 			res = append(res, v)
 		}
 	}
@@ -268,16 +202,6 @@ func IntersectionBy[T any](lhs []T, rhs []T, eq func(T, T) bool) []T {
 
 func Intersection[T comparable](lhs []T, rhs []T) []T {
 	return IntersectionBy(lhs, rhs, operator.Eq[T])
-}
-
-// IsSorted returns true if the given slice is sorted.
-func IsSorted[T core.Ordered](slice []T) bool {
-	return IsSortedBy(slice, operator.Lt[T])
-}
-
-// IsSortedBy returns true if the given slice is sorted by the given less function.
-func IsSortedBy[T any](slice []T, less func(lhs, rhs T) bool) bool {
-	return sort.IsSorted(sortBy[T]{less: less, inner: slice})
 }
 
 // LastIndex returns the index of the last element in the given slice that same with the given element.
@@ -325,6 +249,12 @@ func MaxBy[T any](slice []T, less func(T, T) bool) optional.Optional[T] {
 	})
 }
 
+func MaxByKey[T any, K cmp.Ordered](slice []T, keyFn func(T) K) optional.Optional[T] {
+	return Reduce(slice, func(lhs, rhs T) T {
+		return cond.Ternary(keyFn(lhs) < keyFn(rhs), rhs, lhs)
+	})
+}
+
 // Min returns the minimum element in the given slice.
 func Min[T core.Ordered](slice []T) optional.Optional[T] {
 	return MinBy(slice, operator.Lt[T])
@@ -334,6 +264,12 @@ func Min[T core.Ordered](slice []T) optional.Optional[T] {
 func MinBy[T any](slice []T, less func(T, T) bool) optional.Optional[T] {
 	return Reduce(slice, func(lhs, rhs T) T {
 		return cond.Ternary(less(lhs, rhs), lhs, rhs)
+	})
+}
+
+func MinByKey[T any, K cmp.Ordered](slice []T, keyFn func(T) K) optional.Optional[T] {
+	return Reduce(slice, func(lhs, rhs T) T {
+		return cond.Ternary(keyFn(lhs) < keyFn(rhs), lhs, rhs)
 	})
 }
 
@@ -415,26 +351,6 @@ func Single[T any](slice []T) result.Result[T] {
 	return result.Err[T](errors.New("slice is not scalar"))
 }
 
-type sortBy[T any] struct {
-	less  func(lhs, rhs T) bool
-	inner []T
-}
-
-func (s sortBy[T]) Len() int           { return len(s.inner) }
-func (s sortBy[T]) Less(i, j int) bool { return s.less(s.inner[i], s.inner[j]) }
-func (s sortBy[T]) Swap(i, j int)      { s.inner[i], s.inner[j] = s.inner[j], s.inner[i] }
-
-// SortBy sorts the given slice in-place by the given less function.
-func SortBy[T any](slice []T, less func(lhs, rhs T) bool) []T {
-	sort.Sort(sortBy[T]{less: less, inner: slice})
-	return slice
-}
-
-// Sort sorts the given slice in-place.
-func Sort[T core.Ordered](slice []T) []T {
-	return SortBy(slice, operator.Lt[T])
-}
-
 // ToHashMap converts the given slice to a map by the given key function.
 func ToHashMap[
 	T any,
@@ -497,4 +413,30 @@ func SpliceLast[T any](slice []T) (optional.Optional[T], []T) {
 		return optional.Some(slice[len(slice)-1]), slice[:len(slice)-1]
 	}
 	return optional.None[T](), slice
+}
+
+// FilterNonZero removes zero value from slice
+//
+// zero value are:
+//
+//	integer and float: 0
+//	bool: false
+//	string: empty string, aka: ""
+//	pointer: nil pointer
+//	struct with all field is zero value
+//	interface: nil
+//	chan/map/slice: nil
+func FilterNonZero[T comparable](slice []T) []T {
+	var empty T
+	return Filter(slice, func(t T) bool { return t == empty })
+}
+
+func FirstNonZero[T comparable](slice []T) T {
+	var zero T
+	for _, v := range slice {
+		if zero != v {
+			return v
+		}
+	}
+	return zero
 }

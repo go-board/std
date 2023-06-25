@@ -2,46 +2,47 @@ package core
 
 type Unit struct{}
 
-type (
-	Byte byte
-	Char rune
-)
+type Byte byte
 
-type (
-	Int   int
-	Int8  int8
-	Int16 int16
-	Int32 int32
-	Int64 int64
-)
+type Char rune
 
-type (
-	Uint   uint
-	Uint8  uint8
-	Uint16 uint16
-	Uint32 uint32
-	Uint64 uint64
-)
+type Int int
 
-type (
-	Float32 float32
-	Float64 float64
-)
+type Int8 int8
+
+type Int16 int16
+
+type Int32 int32
+
+type Int64 int64
+
+type Uint uint
+
+type Uint8 uint8
+
+type Uint16 uint16
+
+type Uint32 uint32
+
+type Uint64 uint64
+
+type Float32 float32
+
+type Float64 float64
 
 type Bool bool
 
 type String string
 
-type (
-	Complex64 complex128
-	Complex32 complex64
-)
+type Complex64 complex128
 
-type (
-	Slice[T any]             []T
-	Map[K comparable, V any] map[K]V
-	Chan[T any]              chan T
-)
+type Complex32 complex64
+
+type Slice[T any] []T
+
+type Map[K comparable, V any] map[K]V
+
+type Chan[T any] chan T
 
 func (self Complex32) Real() Float32 { return Float32(real(self)) }
 func (self Complex32) Imag() Float32 { return Float32(imag(self)) }

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/go-board/std/result"
+	"github.com/go-board/std/slices"
 )
 
 // Service is the interface that provides the business logic for the service.
@@ -15,21 +16,16 @@ type Service[Req, Resp any] interface {
 // ServiceFn is the function type that implements the Service interface.
 type ServiceFn[Req, Resp any] func(context.Context, Req) result.Result[Resp]
 
-func (self ServiceFn[Req, Resp]) Call(ctx context.Context, req Req) result.Result[Resp] {
-	return self(ctx, req)
+func (fn ServiceFn[Req, Resp]) Call(ctx context.Context, req Req) result.Result[Resp] {
+	return fn(ctx, req)
 }
 
-type Layer[Req, Resp any, S Service[Req, Resp]] interface {
-	Next(service S) S
-}
+type Layer[S any] interface{ Then(s S) S }
 
-type LayerFn[Req, Resp any, S Service[Req, Resp]] func(service S) S
+type LayerFn[S any] func(s S) S
 
-func (self LayerFn[Req, Resp, S]) Next(service S) S { return self(service) }
+func (fn LayerFn[S]) Then(s S) S { return fn(s) }
 
-func ComposeLayers[Req, Resp any, S Service[Req, Resp], L Layer[Req, Resp, S]](service S, layers ...L) S {
-	for _, layer := range layers {
-		service = layer.Next(service)
-	}
-	return service
+func Chain[S any](ms ...Layer[S]) Layer[S] {
+	return LayerFn[S](func(s S) S { return slices.FoldRight(ms, s, func(a S, m Layer[S]) S { return m.Then(a) }) })
 }

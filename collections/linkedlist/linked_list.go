@@ -1,7 +1,7 @@
 package linkedlist
 
 import (
-	"github.com/go-board/std/iterator"
+	"github.com/go-board/std/iter"
 	"github.com/go-board/std/optional"
 )
 
@@ -10,7 +10,7 @@ type LinkedList[T any] struct {
 	tail *linkedListNode[T]
 }
 
-var _ iterator.Iterable[any] = (*LinkedList[any])(nil)
+var _ iter.Iterable[any] = (*LinkedList[any])(nil)
 
 type linkedListNode[T any] struct {
 	data T
@@ -29,7 +29,7 @@ func FromSlice[T any](elems ...T) *LinkedList[T] {
 	return list
 }
 
-func FromIterator[T any](iter iterator.Iterator[T]) *LinkedList[T] {
+func FromIterator[T any](iter iter.Iter[T]) *LinkedList[T] {
 	list := NewLinkedList[T]()
 	for e := iter.Next(); e.IsSome(); e = iter.Next() {
 		list.Append(e.Value())
@@ -37,7 +37,7 @@ func FromIterator[T any](iter iterator.Iterator[T]) *LinkedList[T] {
 	return list
 }
 
-func (self *LinkedList[T]) Iter() iterator.Iterator[T] {
+func (self *LinkedList[T]) Iter() iter.Iter[T] {
 	return &linkedListIter[T]{list: self, iterNode: self.head}
 }
 
@@ -55,7 +55,7 @@ type linkedListIter[T any] struct {
 	iterNode *linkedListNode[T]
 }
 
-var _ iterator.Iterator[any] = (*linkedListIter[any])(nil)
+var _ iter.Iter[any] = (*linkedListIter[any])(nil)
 
 func (self *linkedListIter[T]) Next() optional.Optional[T] {
 	if self.iterNode != nil {

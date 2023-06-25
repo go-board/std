@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/go-board/std/iter"
+
 	"github.com/frankban/quicktest"
-	"github.com/go-board/std/iterator/ops"
 )
 
 type item struct{ key int }
@@ -286,7 +287,7 @@ func TestHashSet_Iter(t *testing.T) {
 	a := quicktest.New(t)
 	s1 := NewHashSet(1, 2, 3, 4, 5)
 
-	a.Assert(ops.Size(s1.Iter()), quicktest.Equals, 5)
+	a.Assert(iter.Count(s1.Iter()), quicktest.Equals, 5)
 }
 
 func TestHashSet_Marshal(t *testing.T) {

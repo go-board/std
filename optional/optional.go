@@ -154,6 +154,16 @@ func (self Optional[T]) Xor(opt Optional[T]) Optional[T] {
 	return None[T]()
 }
 
+func (self Optional[T]) EqBy(opt Optional[T], eq func(T, T) bool) bool {
+	if self.IsSome() && opt.IsSome() {
+		return eq(self.Value(), opt.Value())
+	}
+	if self.IsNone() && opt.IsNone() {
+		return true
+	}
+	return false
+}
+
 func (self Optional[T]) CloneBy(clone func(T) T) Optional[T] {
 	if self.IsNone() {
 		return None[T]()
@@ -170,43 +180,14 @@ func (self Optional[T]) MarshalJSON() ([]byte, error) {
 
 var _ json.Marshaler = (*Optional[any])(nil)
 
-func (self *Optional[T]) UnmarshalJSON(v []byte) error {
+func (self Optional[T]) UnmarshalJSON(v []byte) error {
 	if string(v) != "null" {
-		return json.Unmarshal(v, self.data)
+		return json.Unmarshal(v, &self.data)
 	}
 	return nil
 }
 
 var _ json.Unmarshaler = (*Optional[any])(nil)
-
-type ComparableOptional[T comparable] struct {
-	Optional[T]
-}
-
-func (self ComparableOptional[T]) Eq(other ComparableOptional[T]) bool {
-	if self.IsNone() && other.IsNone() {
-		return true
-	}
-	if self.IsSome() && other.IsSome() {
-		return self.Value() == other.Value()
-	}
-	return false
-}
-
-func (self ComparableOptional[T]) Ne(other ComparableOptional[T]) bool {
-	return !self.Eq(other)
-}
-
-type FlattenOptional[T any] struct {
-	Optional[Optional[T]]
-}
-
-func (self FlattenOptional[T]) Flatten() Optional[T] {
-	if self.IsNone() {
-		return None[T]()
-	}
-	return self.Value()
-}
 
 func Map[A, B any](opt Optional[A], mapFn func(A) B) Optional[B] {
 	if opt.IsSome() {
@@ -215,6 +196,11 @@ func Map[A, B any](opt Optional[A], mapFn func(A) B) Optional[B] {
 	return None[B]()
 }
 
+// As try to convert the value to the given type.
+//
+// if the value is not convertible to the given type,
+// then the function returns None,
+// otherwise, it returns Some.
 func As[T any](v any) Optional[T] {
 	val, ok := v.(T)
 	return FromPair(val, ok)

@@ -715,7 +715,9 @@ func (s *collectSlice[T]) Extend(iter Iter[T]) {
 }
 
 func CollectToSlice[T any](iter Iter[T]) []T {
-	return FoldLeft(iter, make([]T, 0), func(ts []T, t T) []T { return append(ts, t) })
+	slice := &collectSlice[T]{}
+	CollectInto(iter, slice)
+	return slice.slice
 }
 
 type Extend[T any] interface{ Extend(iter Iter[T]) }

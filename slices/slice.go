@@ -53,7 +53,7 @@ func Chunk[T any](slice []T, chunk int) [][]T {
 
 // Clone returns a new slice with the same elements as the given slice.
 func Clone[T any](slice []T) []T {
-	return DeepCloneBy(slice, func(t T) T { return t })
+	return Map(slice, func(t T) T { return t })
 }
 
 // DeepClone returns a new slice with the cloned elements.

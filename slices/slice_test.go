@@ -5,8 +5,6 @@ import (
 
 	qt "github.com/frankban/quicktest"
 	"github.com/go-board/std/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
-
 	"github.com/go-board/std/slices"
 )
 
@@ -356,7 +354,7 @@ func TestDistinct(t *testing.T) {
 	a.Run("distinctBy", func(c *qt.C) {
 		slice := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 		distincted := slices.DistinctBy(slice, func(i int) int { return i % 2 })
-		a.Assert(distincted, qt.CmpEquals(cmpopts.SortSlices(func(lhs, rhs int) bool { return lhs < rhs })), []int{9, 10})
+		a.Assert(distincted, qt.CmpEquals(), []int{9, 10})
 	})
 }
 

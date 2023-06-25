@@ -10,7 +10,7 @@ import (
 )
 
 func Equal[T comparable, S1 ~[]T, S2 ~[]T](lhs S1, rhs S2) bool {
-	return slices.Equal(lhs, rhs)
+	return slices.Equal(lhs, S1(rhs))
 }
 
 func EqualBy[T, U any, S1 ~[]T, S2 ~[]U](lhs S1, rhs S2, eq func(T, U) bool) bool {
@@ -18,7 +18,7 @@ func EqualBy[T, U any, S1 ~[]T, S2 ~[]U](lhs S1, rhs S2, eq func(T, U) bool) boo
 }
 
 func Compare[T cmp.Ordered, S1 ~[]T, S2 ~[]T](lhs S1, rhs S2) int {
-	return slices.Compare(lhs, rhs)
+	return slices.Compare(lhs, S1(rhs))
 }
 
 func CompareBy[T, U any, S1 ~[]T, S2 ~[]U](lhs S1, rhs S2, cmp func(T, U) int) int {

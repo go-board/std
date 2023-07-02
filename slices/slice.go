@@ -428,7 +428,7 @@ func SpliceLast[T any](slice []T) (optional.Optional[T], []T) {
 //	chan/map/slice: nil
 func FilterNonZero[T comparable](slice []T) []T {
 	var empty T
-	return Filter(slice, func(t T) bool { return t == empty })
+	return Filter(slice, func(t T) bool { return t != empty })
 }
 
 func FirstNonZero[T comparable](slice []T) T {

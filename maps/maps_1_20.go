@@ -6,15 +6,6 @@ import (
 	"github.com/go-board/std/operator"
 )
 
-// Entries returns a [vector.ImmutableVector] over the entries of the map.
-func Entries[K comparable, V any, M ~map[K]V](m M) []MapEntry[K, V] {
-	es := make([]MapEntry[K, V], 0, len(m))
-	for k, v := range m {
-		es = append(es, entry(k, v))
-	}
-	return es
-}
-
 func Clone[K comparable, V any, M ~map[K]V](m M) M {
 	r := make(M)
 	for k, v := range m {

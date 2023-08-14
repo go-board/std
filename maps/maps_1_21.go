@@ -4,7 +4,6 @@ package maps
 
 import "maps"
 
-
 func Equal[K comparable, V comparable, M1 ~map[K]V, M2 ~map[K]V](lhs M1, rhs M2) bool {
 	return maps.Equal(lhs, rhs)
 }

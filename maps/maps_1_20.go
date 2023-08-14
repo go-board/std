@@ -15,22 +15,6 @@ func Entries[K comparable, V any, M ~map[K]V](m M) []MapEntry[K, V] {
 	return es
 }
 
-func Keys[K comparable, V any, M ~map[K]V](m M) []K {
-	ks := make([]K, 0, len(m))
-	for k := range m {
-		ks = append(ks, k)
-	}
-	return ks
-}
-
-func Values[K comparable, V any, M ~map[K]V](m M) []V {
-	vs := make([]V, 0, len(m))
-	for _, v := range m {
-		vs = append(vs, v)
-	}
-	return vs
-}
-
 func Clone[K comparable, V any, M ~map[K]V](m M) M {
 	r := make(M)
 	for k, v := range m {

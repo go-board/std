@@ -1,6 +1,6 @@
 package dp
 
-func LcsBy[T any](left []T, right []T, eq func(T, T) bool) []T {
+func LcsBy[T any, S ~[]T](left S, right S, eq func(T, T) bool) S {
 	if len(left) == 0 || len(right) == 0 {
 		return nil
 	}
@@ -14,6 +14,6 @@ func LcsBy[T any](left []T, right []T, eq func(T, T) bool) []T {
 	return lcs2
 }
 
-func Lcs[T comparable](left []T, right []T) []T {
+func Lcs[T comparable, S ~[]T](left S, right S) S {
 	return LcsBy(left, right, func(a, b T) bool { return a == b })
 }

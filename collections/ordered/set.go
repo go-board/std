@@ -14,10 +14,7 @@ type Set[T any] struct {
 	inner *btree.BTreeG[T]
 }
 
-var (
-	_ clone.Cloneable[*Set[any]] = (*Set[any])(nil)
-	_ iter.Iterable[any]         = (*Set[any])(nil)
-)
+var _ clone.Cloneable[*Set[any]] = (*Set[any])(nil)
 
 // NewSet creates a new Set.
 func NewSet[T any](cmp func(T, T) int) *Set[T] {
@@ -40,11 +37,19 @@ func (self *Set[T]) InsertMany(elements ...T) {
 	}
 }
 
+func (self *Set[T]) InsertIter(it iter.Seq[T]) {
+	iter.ForEach(it, func(t T) { self.inner.Set(t) })
+}
+
 // Remove removes elements from the set.
 func (self *Set[T]) Remove(elements ...T) {
 	for _, element := range elements {
 		self.inner.Delete(element)
 	}
+}
+
+func (self *Set[T]) RemoveIter(it iter.Seq[T]) {
+	iter.ForEach(it, func(t T) { self.inner.Delete(t) })
 }
 
 func (self *Set[T]) Clear() {
@@ -54,7 +59,7 @@ func (self *Set[T]) Clear() {
 // Reverse returns a reversed view of the set.
 func (self *Set[T]) Reverse() *Set[T] {
 	newSet := NewSet(invert(self.cmp))
-	iter.ForEach(self.Iter(), newSet.Insert)
+	iter.ForEach(self.AscendIter(), newSet.Insert)
 	return newSet
 }
 
@@ -62,19 +67,6 @@ func (self *Set[T]) Reverse() *Set[T] {
 func (self *Set[T]) Contains(element T) bool {
 	_, ok := self.inner.Get(element)
 	return ok
-}
-
-// Range returns an iter over the set.
-func (self *Set[T]) Range(start, end T) *Set[T] {
-	newSet := NewSet(self.cmp)
-	insert := func(s *Set[T], v T) bool {
-		s.Insert(v)
-		return true
-	}
-	self.inner.Ascend(start, func(item T) bool {
-		return self.inner.Less(item, end) && insert(newSet, item)
-	})
-	return newSet
 }
 
 // First returns the first element of the set.
@@ -105,7 +97,7 @@ func (self *Set[T]) Clone() *Set[T] {
 // Intersection returns the intersection of the two sets.
 func (self *Set[T]) Intersection(o *Set[T]) *Set[T] {
 	newSet := NewSet(self.cmp)
-	iter.ForEach(self.Iter(), func(t T) {
+	iter.ForEach(self.AscendIter(), func(t T) {
 		if o.Contains(t) {
 			newSet.Insert(t)
 		}
@@ -116,7 +108,7 @@ func (self *Set[T]) Intersection(o *Set[T]) *Set[T] {
 // Difference returns the difference of the two sets.
 func (self *Set[T]) Difference(o *Set[T]) *Set[T] {
 	cloned := self.Clone()
-	iter.ForEach(self.Iter(), func(t T) {
+	iter.ForEach(self.AscendIter(), func(t T) {
 		if o.Contains(t) {
 			cloned.Remove(t)
 		}
@@ -127,18 +119,18 @@ func (self *Set[T]) Difference(o *Set[T]) *Set[T] {
 // Union returns the union of the two sets.
 func (self *Set[T]) Union(o *Set[T]) *Set[T] {
 	cloned := self.Clone()
-	iter.ForEach(o.Iter(), cloned.Insert)
+	iter.ForEach(o.AscendIter(), cloned.Insert)
 	return cloned
 }
 
 // SubsetOf returns true if the set is a subset of the other set.
 func (self *Set[T]) SubsetOf(o *Set[T]) bool {
-	return iter.AllOf(o.Iter(), o.Contains)
+	return iter.All(o.AscendIter(), o.Contains)
 }
 
 // SupersetOf returns true if the set is a superset of the other set.
 func (self *Set[T]) SupersetOf(o *Set[T]) bool {
-	return iter.AllOf(o.Iter(), self.Contains)
+	return iter.All(o.AscendIter(), self.Contains)
 }
 
 // Len returns the number of elements in the set.
@@ -146,20 +138,12 @@ func (self *Set[T]) Len() int {
 	return self.inner.Len()
 }
 
-// Iter returns an iter over the set.
-func (self *Set[T]) Iter() iter.Iter[T] {
-	return &setIter[T]{iter: self.inner.Iter()}
+// AscendIter returns an iter over the set in ascend order.
+func (self *Set[T]) AscendIter() iter.Seq[T] {
+	return self.inner.Scan
 }
 
-type setIter[T any] struct {
-	iter btree.IterG[T]
-}
-
-var _ iter.Iter[any] = (*setIter[any])(nil)
-
-func (self *setIter[T]) Next() optional.Optional[T] {
-	if self.iter.Next() {
-		return optional.Some(self.iter.Item())
-	}
-	return optional.None[T]()
+// DescendIter returns an iter over the set in descend order.
+func (self *Set[T]) DescendIter() iter.Seq[T] {
+	return self.inner.Reverse
 }

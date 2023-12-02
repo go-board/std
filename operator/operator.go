@@ -5,6 +5,9 @@ import (
 	"github.com/go-board/std/core"
 )
 
+// Identify return self.
+func Identify[E any](x E) E { return x }
+
 // Neg return negative value of input value.
 func Neg[T core.Numeric](v T) T { return -v }
 

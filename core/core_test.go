@@ -1,8 +1,10 @@
-package core
+package core_test
 
 import (
 	"reflect"
 	"testing"
+
+	. "github.com/go-board/std/core"
 )
 
 func TestSlice(t *testing.T) {

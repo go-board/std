@@ -6,6 +6,7 @@ import (
 	"cmp"
 	"slices"
 
+	"github.com/go-board/std/iter"
 	"github.com/go-board/std/optional"
 )
 
@@ -25,28 +26,30 @@ func CompareBy[T, U any, S1 ~[]T, S2 ~[]U](lhs S1, rhs S2, cmp func(T, U) int) i
 	return slices.CompareFunc(lhs, rhs, cmp)
 }
 
-func Sort[T cmp.Ordered](slice []T) {
+func Sort[T cmp.Ordered, S ~[]T](slice S) S {
 	slices.Sort(slice)
+	return slice
 }
 
-func SortBy[T any](slice []T, cmp func(T, T) int) {
+func SortBy[T any, S ~[]T](slice S, cmp func(T, T) int) S {
 	slices.SortFunc(slice, cmp)
+	return slice
 }
 
-func IsSorted[T cmp.Ordered](slice []T) bool {
+func IsSorted[T cmp.Ordered, S ~[]T](slice S) bool {
 	return slices.IsSorted(slice)
 }
 
-func IsSortedBy[T any](slice []T, cmp func(T, T) int) bool {
+func IsSortedBy[T any, S ~[]T](slice S, cmp func(T, T) int) bool {
 	return slices.IsSortedFunc(slice, cmp)
 }
 
-func Index[T comparable](slice []T, v T) optional.Optional[int] {
+func Index[T comparable, S ~[]T](slice S, v T) optional.Optional[int] {
 	return IndexBy(slice, func(t T) bool { return t == v })
 }
 
 // IndexBy returns the index of the first element in the given slice that satisfies the given predicate.
-func IndexBy[T any](slice []T, predicate func(T) bool) optional.Optional[int] {
+func IndexBy[T any, S ~[]T](slice S, predicate func(T) bool) optional.Optional[int] {
 	i := slices.IndexFunc(slice, predicate)
 	if i < 0 {
 		return optional.None[int]()
@@ -55,11 +58,12 @@ func IndexBy[T any](slice []T, predicate func(T) bool) optional.Optional[int] {
 }
 
 // Contains returns true if the given slice contains the given element.
-func Contains[T comparable](slice []T, v T) bool {
+func Contains[T comparable, S ~[]T](slice S, v T) bool {
 	return ContainsBy(slice, func(t T) bool { return t == v })
 }
 
 // ContainsBy returns true if the given slice contains an element that satisfies the given predicate.
-func ContainsBy[T any](slice []T, predicate func(T) bool) bool {
-	return slices.ContainsFunc(slice, predicate)
+func ContainsBy[T any, S ~[]T](slice S, predicate func(T) bool) bool {
+	_, ok := iter.Find(ForwardSeq(slice), predicate)
+	return ok
 }

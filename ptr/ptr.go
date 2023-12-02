@@ -30,6 +30,13 @@ func ValueOrZero[T any](v *T) T {
 	return ValueOr(v, zero[T]())
 }
 
+func OrZero[T any](v *T) *T {
+	if v == nil {
+		return Ref(zero[T]())
+	}
+	return v
+}
+
 // Compare compares two pointer. If both non-nil, compare underlying data,
 // if both nil, return 0, non-nil pointer is always greater than nil pointer.
 func Compare[T cmp.Ordered](l, r *T) int {

@@ -279,8 +279,8 @@ func ExampleMaxBy() {
 		{Id: 3, Name: "Jack"},
 		{Id: 4, Name: "Bob"},
 	}
-	maxId := slices.MaxBy(slice, func(a, b user) bool { return a.Id < b.Id })
-	maxName := slices.MaxBy(slice, func(a, b user) bool { return a.Name < b.Name })
+	maxId := slices.MaxBy(slice, func(a, b user) int { return cmp.Compare(a.Id, b.Id) })
+	maxName := slices.MaxBy(slice, func(a, b user) int { return cmp.Compare(a.Name, b.Name) })
 	fmt.Println(maxId, maxName)
 	// Output:
 	// Some({Id:4 Name:Bob}) Some({Id:1 Name:John})
@@ -301,8 +301,8 @@ func ExampleMinBy() {
 		{Id: 3, Name: "Jack"},
 		{Id: 4, Name: "Bob"},
 	}
-	minId := slices.MinBy(slice, func(a, b user) bool { return a.Id < b.Id })
-	minName := slices.MinBy(slice, func(a, b user) bool { return a.Name < b.Name })
+	minId := slices.MinBy(slice, func(a, b user) int { return cmp.Compare(a.Id, b.Id) })
+	minName := slices.MinBy(slice, func(a, b user) int { return cmp.Compare(a.Name, b.Name) })
 	fmt.Println(minId, minName)
 	// Output:
 	// Some({Id:1 Name:John}) Some({Id:4 Name:Bob})
@@ -468,7 +468,7 @@ func ExampleDeepClone_user() {
 
 func ExampleClone() {
 	slice := []int{1, 2, 3}
-	result := slices.Clone(slice)
+	result := slices.Clone[int, []int](slice)
 	fmt.Println(result)
 	// Output:
 	// [1 2 3]

@@ -25,7 +25,7 @@ func (i item) Clone() item { return item{key: i.key} }
 
 func TestHashSet_Add(t *testing.T) {
 	a := quicktest.New(t)
-	s := NewHashSet[int]()
+	s := FromSlice[int]()
 	s.Add(1, 2)
 	a.Assert(s.Contains(1), quicktest.IsTrue)
 	a.Assert(s.Contains(2), quicktest.IsTrue)
@@ -34,8 +34,8 @@ func TestHashSet_Add(t *testing.T) {
 
 func TestHashSet_AddAll(t *testing.T) {
 	a := quicktest.New(t)
-	s := NewHashSet[int]()
-	s.AddAll(NewHashSet(1, 2))
+	s := FromSlice[int]()
+	s.AddAll(FromSlice(1, 2))
 	a.Assert(s.Contains(1), quicktest.IsTrue)
 	a.Assert(s.Contains(2), quicktest.IsTrue)
 	a.Assert(s.Contains(3), quicktest.IsFalse)
@@ -44,7 +44,7 @@ func TestHashSet_AddAll(t *testing.T) {
 
 func TestHashSet_Remove(t *testing.T) {
 	a := quicktest.New(t)
-	s := NewHashSet[int]()
+	s := FromSlice[int]()
 	s.Add(1)
 	s.Add(2)
 	s.Remove(1)
@@ -53,22 +53,9 @@ func TestHashSet_Remove(t *testing.T) {
 	a.Assert(s.Size(), quicktest.Equals, 1)
 }
 
-func TestHashSet_RemoveBy(t *testing.T) {
-	a := quicktest.New(t)
-	s := NewHashSet[int]()
-	s.Add(1)
-	s.Add(2)
-	s.Add(3)
-	s.RemoveBy(func(i int) bool { return i == 1 })
-	a.Assert(s.Contains(1), quicktest.IsFalse)
-	a.Assert(s.Contains(2), quicktest.IsTrue)
-	a.Assert(s.Contains(3), quicktest.IsTrue)
-	a.Assert(s.Size(), quicktest.Equals, 2)
-}
-
 func TestHashSet_Clear(t *testing.T) {
 	a := quicktest.New(t)
-	s := NewHashSet[int]()
+	s := FromSlice[int]()
 	s.Add(1)
 	s.Add(2)
 	s.Clear()
@@ -79,7 +66,7 @@ func TestHashSet_Clear(t *testing.T) {
 
 func TestHashSet_Contains(t *testing.T) {
 	a := quicktest.New(t)
-	s := NewHashSet[int]()
+	s := FromSlice[int]()
 	s.Add(1)
 	s.Add(2)
 	a.Assert(s.Contains(1), quicktest.IsTrue)
@@ -89,7 +76,7 @@ func TestHashSet_Contains(t *testing.T) {
 
 func TestHashSet_ContainsAll(t *testing.T) {
 	a := quicktest.New(t)
-	s := NewHashSet[int]()
+	s := FromSlice[int]()
 	s.Add(1)
 	s.Add(2)
 	s.Add(3)
@@ -99,7 +86,7 @@ func TestHashSet_ContainsAll(t *testing.T) {
 
 func TestHashSet_ContainsAny(t *testing.T) {
 	a := quicktest.New(t)
-	s := NewHashSet[int]()
+	s := FromSlice[int]()
 	s.Add(1)
 	s.Add(2)
 	s.Add(3)
@@ -110,7 +97,7 @@ func TestHashSet_ContainsAny(t *testing.T) {
 
 func TestHashSet_Size(t *testing.T) {
 	a := quicktest.New(t)
-	s := NewHashSet[int]()
+	s := FromSlice[int]()
 	s.Add(1)
 	s.Add(2)
 	s.Add(3)
@@ -123,7 +110,7 @@ func TestHashSet_Size(t *testing.T) {
 
 func TestHashSet_IsEmpty(t *testing.T) {
 	a := quicktest.New(t)
-	s := NewHashSet[int]()
+	s := FromSlice[int]()
 	a.Assert(s.IsEmpty(), quicktest.IsTrue)
 	s.Add(1)
 	a.Assert(s.IsEmpty(), quicktest.IsFalse)
@@ -131,7 +118,7 @@ func TestHashSet_IsEmpty(t *testing.T) {
 
 func TestHashSet_Clone(t *testing.T) {
 	a := quicktest.New(t)
-	s1 := NewHashSet[int]()
+	s1 := FromSlice[int]()
 	s1.Add(1)
 	s1.Add(2)
 	s1.Add(3)
@@ -143,7 +130,7 @@ func TestHashSet_Clone(t *testing.T) {
 
 func TestHashSet_DeepCloneBy(t *testing.T) {
 	a := quicktest.New(t)
-	s1 := NewHashSet[int]()
+	s1 := FromSlice[int]()
 	s1.Add(1)
 	s1.Add(2)
 	s1.Add(3)
@@ -155,11 +142,11 @@ func TestHashSet_DeepCloneBy(t *testing.T) {
 
 func TestHashSet_SupersetOf(t *testing.T) {
 	a := quicktest.New(t)
-	s1 := NewHashSet[int]()
+	s1 := FromSlice[int]()
 	s1.Add(1)
 	s1.Add(2)
 	s1.Add(3)
-	s2 := NewHashSet[int]()
+	s2 := FromSlice[int]()
 	a.Assert(s1.SupersetOf(s2), quicktest.IsTrue)
 	s2.Add(1)
 	s2.Add(2)
@@ -171,11 +158,11 @@ func TestHashSet_SupersetOf(t *testing.T) {
 
 func TestHashSet_SubsetOf(t *testing.T) {
 	a := quicktest.New(t)
-	s1 := NewHashSet[int]()
+	s1 := FromSlice[int]()
 	s1.Add(1)
 	s1.Add(2)
 	s1.Add(3)
-	s2 := NewHashSet[int]()
+	s2 := FromSlice[int]()
 	a.Assert(s2.SubsetOf(s1), quicktest.IsTrue)
 	s2.Add(1)
 	s2.Add(2)
@@ -187,11 +174,11 @@ func TestHashSet_SubsetOf(t *testing.T) {
 
 func TestHashSet_Union(t *testing.T) {
 	a := quicktest.New(t)
-	s1 := NewHashSet[int]()
+	s1 := FromSlice[int]()
 	s1.Add(1)
 	s1.Add(2)
 	s1.Add(3)
-	s2 := NewHashSet[int]()
+	s2 := FromSlice[int]()
 	s2.Add(1)
 	s2.Add(4)
 	s2.Add(5)
@@ -202,11 +189,11 @@ func TestHashSet_Union(t *testing.T) {
 
 func TestHashSet_Intersection(t *testing.T) {
 	a := quicktest.New(t)
-	s1 := NewHashSet[int]()
+	s1 := FromSlice[int]()
 	s1.Add(1)
 	s1.Add(2)
 	s1.Add(3)
-	s2 := NewHashSet[int]()
+	s2 := FromSlice[int]()
 	s2.Add(1)
 	s2.Add(4)
 	s2.Add(5)
@@ -217,11 +204,11 @@ func TestHashSet_Intersection(t *testing.T) {
 
 func TestHashSet_Difference(t *testing.T) {
 	a := quicktest.New(t)
-	s1 := NewHashSet[int]()
+	s1 := FromSlice[int]()
 	s1.Add(1)
 	s1.Add(2)
 	s1.Add(3)
-	s2 := NewHashSet[int]()
+	s2 := FromSlice[int]()
 	s2.Add(1)
 	s2.Add(4)
 	s2.Add(5)
@@ -232,11 +219,11 @@ func TestHashSet_Difference(t *testing.T) {
 
 func TestHashSet_SymmetricDifference(t *testing.T) {
 	a := quicktest.New(t)
-	s1 := NewHashSet[int]()
+	s1 := FromSlice[int]()
 	s1.Add(1)
 	s1.Add(2)
 	s1.Add(3)
-	s2 := NewHashSet[int]()
+	s2 := FromSlice[int]()
 	s2.Add(1)
 	s2.Add(4)
 	s2.Add(5)
@@ -247,11 +234,11 @@ func TestHashSet_SymmetricDifference(t *testing.T) {
 
 func TestHashSet_Equal(t *testing.T) {
 	a := quicktest.New(t)
-	s1 := NewHashSet[int]()
+	s1 := FromSlice[int]()
 	s1.Add(1)
 	s1.Add(2)
 	s1.Add(3)
-	s2 := NewHashSet[int]()
+	s2 := FromSlice[int]()
 	s2.Add(1)
 	s2.Add(2)
 	s2.Add(3)
@@ -262,14 +249,14 @@ func TestHashSet_Equal(t *testing.T) {
 
 func TestHashSet_Iter(t *testing.T) {
 	a := quicktest.New(t)
-	s1 := NewHashSet(1, 2, 3, 4, 5)
+	s1 := FromSlice(1, 2, 3, 4, 5)
 
 	a.Assert(iter.Size(s1.Iter()), quicktest.Equals, 5)
 }
 
 func TestHashSet_Marshal(t *testing.T) {
 	a := quicktest.New(t)
-	s := NewHashSet(5, 1, 4, 2, 3, 1, 2, 3)
+	s := FromSlice(5, 1, 4, 2, 3, 1, 2, 3)
 	b, err := json.Marshal(s)
 	a.Assert(err, quicktest.IsNil)
 	a.Logf("%s\n ", b)
@@ -277,9 +264,20 @@ func TestHashSet_Marshal(t *testing.T) {
 
 func TestHashSet_UnmarshalJSON(t *testing.T) {
 	a := quicktest.New(t)
-	s := NewHashSet[int]()
+	s := FromSlice[int]()
 	err := json.Unmarshal([]byte(`{"1":{},"2":{},"3":{},"4":{},"5":{}}`), &s)
 	a.Assert(err, quicktest.IsNil)
 	a.Logf("%+v\n", s)
-	a.Assert(s.Equal(NewHashSet(1, 2, 3, 4, 5)), quicktest.IsTrue)
+	a.Assert(s.Equal(FromSlice(1, 2, 3, 4, 5)), quicktest.IsTrue)
+}
+
+func TestIterMut(t *testing.T) {
+	s := FromSlice[int](1, 2, 3, 4)
+	s.IterMut().ForEach(func(s *SetItem[int]) {
+		if s.Value()%2 == 0 {
+			s.Remove()
+		}
+	})
+	x := s.ToMap()
+	t.Logf("result is %+v\n", x)
 }

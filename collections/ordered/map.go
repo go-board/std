@@ -59,9 +59,7 @@ func (self *Map[K, V]) Insert(key K, value V) optional.Optional[V] {
 }
 
 func (self *Map[K, V]) InsertIter(it iter.Seq[MapEntry[K, V]]) {
-	iter.ForEach(it, func(me MapEntry[K, V]) {
-		self.insertEntry(me)
-	})
+	iter.CollectFunc(it, func(me MapEntry[K, V]) bool { self.insertEntry(me); return true })
 }
 
 func (self *Map[K, V]) insertEntry(entry MapEntry[K, V]) {
@@ -91,7 +89,7 @@ func (self *Map[K, V]) Clone() *Map[K, V] {
 // Reverse returns a reversed copy of the Map.
 func (self *Map[K, V]) Reverse() *Map[K, V] {
 	newTree := NewMap[K, V](invert(self.cmp))
-	iter.ForEach(self.EntryIter(), newTree.insertEntry)
+	iter.ForEach(self.Entries(), newTree.insertEntry)
 	return newTree
 }
 
@@ -101,9 +99,24 @@ func (self *Map[K, V]) ContainsKey(key K) bool {
 	return ok
 }
 
+// ContainsAll tests is all elements in [Seq] is a valid map key.
+func (self *Map[K, V]) ContainsAll(it iter.Seq[K]) bool {
+	return it.All(self.ContainsKey)
+}
+
+// ContainsAny tests is any elements in [Seq] is a valid map key.
+func (self *Map[K, V]) ContainsAny(it iter.Seq[K]) bool {
+	return it.Any(self.ContainsKey)
+}
+
 // Remove removes the MapEntry for the given key.
 func (self *Map[K, V]) Remove(key K) {
 	self.inner.Delete(self.keyEntry(key))
+}
+
+// RemoveIter remove all elements in [Seq].
+func (self *Map[K, V]) RemoveIter(it iter.Seq[K]) {
+	it.ForEach(self.Remove)
 }
 
 // First returns the first MapEntry.
@@ -126,29 +139,79 @@ func (self *Map[K, V]) PopLast() optional.Optional[MapEntry[K, V]] {
 	return optional.FromPair(self.inner.PopMax())
 }
 
-// KeyIter returns an iterator over the keys in the map.
-func (self *Map[K, V]) KeyIter() iter.Seq[K] {
-	return iter.Map(self.inner.Scan, func(e MapEntry[K, V]) K { return e.Key() })
+// Keys returns an iterator over the keys in the map.
+func (self *Map[K, V]) Keys() iter.Seq[K] {
+	return func(yield func(K) bool) {
+		self.inner.Scan(func(item MapEntry[K, V]) bool { return yield(item.Key()) })
+	}
 }
 
-// ValueIter returns an iterator over the keys in the map.
-func (self *Map[K, V]) ValueIter() iter.Seq[V] {
-	return iter.Map(self.inner.Scan, func(e MapEntry[K, V]) V { return e.Value() })
+func (self *Map[K, V]) KeysMut() iter.Seq[*KeyItem[K, V]] {
+	return func(yield func(*KeyItem[K, V]) bool) {
+		self.inner.Scan(func(item MapEntry[K, V]) bool {
+			return yield(&KeyItem[K, V]{key: item.Key(), m: self})
+		})
+	}
 }
 
-// EntryIter returns an iterator over the keys in the map.
-func (self *Map[K, V]) EntryIter() iter.Seq[MapEntry[K, V]] {
-	return self.inner.Scan
+// Values returns an iterator over the keys in the map.
+func (self *Map[K, V]) Values() iter.Seq[V] {
+	return func(yield func(V) bool) {
+		self.inner.Scan(func(item MapEntry[K, V]) bool { return yield(item.Value()) })
+	}
 }
+
+func (self *Map[K, V]) ValuesMut() iter.Seq[*ValueItem[K, V]] {
+	return func(yield func(*ValueItem[K, V]) bool) {
+		self.inner.Scan(func(item MapEntry[K, V]) bool {
+			return yield(&ValueItem[K, V]{key: item.Key(), m: self})
+		})
+	}
+}
+
+// Entries returns an iterator over the keys in the map.
+func (self *Map[K, V]) Entries() iter.Seq[MapEntry[K, V]] { return self.inner.Scan }
 
 // Len returns the number of entries in the map.
 func (self *Map[K, V]) Len() int {
 	return self.inner.Len()
 }
 
-func (self *Map[K, V]) Merge(o *Map[K, V]) {
+func (self *Map[K, V]) MergeKeep(o *Map[K, V]) {
+	self.MergeFunc(o, func(_ K, prev V, _ V) V { return prev })
+}
+
+func (self *Map[K, V]) MergeOverwrite(o *Map[K, V]) {
+	self.MergeFunc(o, func(key K, prev V, current V) V { return current })
+}
+
+func (self *Map[K, V]) MergeFunc(o *Map[K, V], solve func(key K, prev V, current V) V) {
 	o.inner.Scan(func(item MapEntry[K, V]) bool {
-		self.Insert(item.Key(), item.Value())
+		prev := self.GetEntry(item.Key())
+		v := item.Value()
+		if prev.IsSome() {
+			v = solve(item.Key(), prev.Value().Value(), v)
+		}
+		self.Insert(item.Key(), v)
 		return true
 	})
 }
+
+type KeyItem[K any, V any] struct {
+	key K
+	m   *Map[K, V]
+}
+
+func (k *KeyItem[K, V]) Key() K  { return k.key }
+func (k *KeyItem[K, V]) Set(v V) { k.m.Insert(k.key, v) }
+func (k *KeyItem[K, V]) Remove() { k.m.Remove(k.key) }
+
+type ValueItem[K any, V any] struct {
+	val V
+	key K
+	m   *Map[K, V]
+}
+
+func (v *ValueItem[K, V]) Value() V  { return v.val }
+func (v *ValueItem[K, V]) Set(val V) { v.m.Insert(v.key, val) }
+func (v *ValueItem[K, V]) Remove()   { v.m.Remove(v.key) }

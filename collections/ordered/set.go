@@ -38,7 +38,7 @@ func (self *Set[T]) InsertMany(elements ...T) {
 }
 
 func (self *Set[T]) InsertIter(it iter.Seq[T]) {
-	iter.ForEach(it, func(t T) { self.inner.Set(t) })
+	it.ForEach(func(t T) { self.inner.Set(t) })
 }
 
 // Remove removes elements from the set.
@@ -119,7 +119,7 @@ func (self *Set[T]) Difference(o *Set[T]) *Set[T] {
 // Union returns the union of the two sets.
 func (self *Set[T]) Union(o *Set[T]) *Set[T] {
 	cloned := self.Clone()
-	iter.ForEach(o.AscendIter(), cloned.Insert)
+	cloned.InsertIter(o.AscendIter())
 	return cloned
 }
 
@@ -134,16 +134,26 @@ func (self *Set[T]) SupersetOf(o *Set[T]) bool {
 }
 
 // Len returns the number of elements in the set.
-func (self *Set[T]) Len() int {
-	return self.inner.Len()
-}
+func (self *Set[T]) Len() int { return self.inner.Len() }
 
 // AscendIter returns an iter over the set in ascend order.
-func (self *Set[T]) AscendIter() iter.Seq[T] {
-	return self.inner.Scan
+func (self *Set[T]) AscendIter() iter.Seq[T] { return self.inner.Scan }
+
+func (self *Set[T]) AscendIterMut() iter.Seq[*SetItem[T]] {
+	return iter.Map(self.inner.Scan, func(e T) *SetItem[T] { return &SetItem[T]{item: e, s: self} })
 }
 
 // DescendIter returns an iter over the set in descend order.
-func (self *Set[T]) DescendIter() iter.Seq[T] {
-	return self.inner.Reverse
+func (self *Set[T]) DescendIter() iter.Seq[T] { return self.inner.Reverse }
+
+func (self *Set[T]) DescendIterMut() iter.Seq[*SetItem[T]] {
+	return iter.Map(self.inner.ReverseMut, func(e T) *SetItem[T] { return &SetItem[T]{item: e, s: self} })
 }
+
+type SetItem[E any] struct {
+	item E
+	s    *Set[E]
+}
+
+func (s *SetItem[E]) Value() E { return s.item }
+func (s *SetItem[E]) Remove()  { s.s.Remove(s.item) }

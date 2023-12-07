@@ -13,7 +13,10 @@ type user struct {
 }
 
 func (u user) Compare(o user) int {
-	return cmp.Compare(u.Id, o.Id)
+	if x := cmp.Compare(u.Id, o.Id); x != 0 {
+		return x
+	}
+	return cmp.Compare(u.Name, o.Name)
 }
 
 func (u user) Clone() user {
@@ -385,7 +388,7 @@ func ExampleGroupBy() {
 		{Id: 2, Name: "Jack"},
 		{Id: 4, Name: "Bob"},
 	}
-	result := slices.GroupBy(slice, func(u user) (int64, user) { return u.Id, u })
+	result := slices.GroupBy(slice, func(u user) int64 { return u.Id })
 	fmt.Println(result)
 	// Output:
 	// map[1:[{1 John}] 2:[{2 Jane} {2 Jack}] 4:[{4 Bob}]]
@@ -503,7 +506,12 @@ func ExampleIntersectionBy() {
 		{Id: 5, Name: "Bob"},
 		{Id: 6, Name: "Jack"},
 	}
-	result := slices.IntersectionBy(slice, slice2, func(a, b user) bool { return a.Id == b.Id && a.Name == b.Name })
+	result := slices.IntersectionBy(slice, slice2, func(a, b user) int {
+		if x := cmp.Compare(a.Id, b.Id); x != 0 {
+			return x
+		}
+		return cmp.Compare(a.Name, b.Name)
+	})
 	fmt.Println(result)
 	// Output:
 	// [{1 John} {2 Jane}]
@@ -522,7 +530,7 @@ func ExampleDifferenceBy() {
 		{Id: 5, Name: "Bob"},
 		{Id: 6, Name: "Jack"},
 	}
-	result := slices.DifferenceBy(slice, slice2, func(a, b user) bool { return a.Id == b.Id && a.Name == b.Name })
+	result := slices.DifferenceBy(slice, slice2, func(a, b user) int { return user.Compare(a, b) })
 	fmt.Println(result)
 	// Output:
 	// [{3 Jack} {4 Bob}]

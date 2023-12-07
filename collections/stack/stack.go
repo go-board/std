@@ -17,9 +17,7 @@ func FromSlice[E any](elems ...E) *Stack[E] {
 	return &Stack[E]{elements: elems}
 }
 
-func (s *Stack[E]) Push(elem E) {
-	s.elements = append(s.elements, elem)
-}
+func (s *Stack[E]) Push(elem E) { s.elements = append(s.elements, elem) }
 
 func (s *Stack[E]) Pop() (e E, ok bool) {
 	if len(s.elements) == 0 {
@@ -40,14 +38,6 @@ func (s *Stack[E]) Peek() (e E, ok bool) {
 	return
 }
 
-func (s *Stack[E]) IsEmpty() bool {
-	return len(s.elements) == 0
-}
-
-func (s *Stack[E]) Size() int {
-	return len(s.elements)
-}
-
-func (s *Stack[E]) Iter() iter.Seq[E] {
-	return slices.BackwardSeq(s.elements)
-}
+func (s *Stack[E]) IsEmpty() bool     { return len(s.elements) == 0 }
+func (s *Stack[E]) Size() int         { return len(s.elements) }
+func (s *Stack[E]) Iter() iter.Seq[E] { return slices.Backward(s.elements) }

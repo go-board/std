@@ -6,11 +6,10 @@ import (
 	"iter"
 
 	"github.com/go-board/std/cmp"
-	"github.com/go-board/std/core"
 	"github.com/go-board/std/operator"
 )
 
-func Cmp[E core.Ordered](x Seq[E], y Seq[E]) int {
+func Cmp[E cmp.Ordered](x Seq[E], y Seq[E]) int {
 	return CmpFunc(x, y, cmp.Compare[E])
 }
 
@@ -36,10 +35,10 @@ func CmpFunc[E, F any](x Seq[E], y Seq[F], f func(E, F) int) int {
 	}
 }
 
-func Gt[E core.Ordered](x Seq[E], y Seq[E]) bool { return Cmp(x, y) > 0 }
-func Ge[E core.Ordered](x Seq[E], y Seq[E]) bool { return Cmp(x, y) >= 0 }
-func Lt[E core.Ordered](x Seq[E], y Seq[E]) bool { return Cmp(x, y) < 0 }
-func Le[E core.Ordered](x Seq[E], y Seq[E]) bool { return Cmp(x, y) <= 0 }
+func Gt[E cmp.Ordered](x Seq[E], y Seq[E]) bool { return Cmp(x, y) > 0 }
+func Ge[E cmp.Ordered](x Seq[E], y Seq[E]) bool { return Cmp(x, y) >= 0 }
+func Lt[E cmp.Ordered](x Seq[E], y Seq[E]) bool { return Cmp(x, y) < 0 }
+func Le[E cmp.Ordered](x Seq[E], y Seq[E]) bool { return Cmp(x, y) <= 0 }
 
 func Eq[E comparable](x Seq[E], y Seq[E]) bool {
 	return EqFunc(x, y, operator.Eq[E])

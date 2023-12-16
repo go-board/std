@@ -351,7 +351,7 @@ func ExampleFlattenBy() {
 
 func ExampleFlatten() {
 	slice := [][]int{{1, 2, 3}, {4, 5, 6}}
-	result := slices.Flatten(slice)
+	result := slices.Flatten[int](slice)
 	fmt.Println(result)
 	// Output:
 	// [1 2 3 4 5 6]
@@ -359,7 +359,7 @@ func ExampleFlatten() {
 
 func ExampleFlatten_empty() {
 	slice := [][]int{}
-	result := slices.Flatten(slice)
+	result := slices.Flatten[int](slice)
 	fmt.Println(result)
 	// Output:
 	// []

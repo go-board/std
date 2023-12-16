@@ -38,7 +38,7 @@ func (self *Set[T]) InsertMany(elements ...T) {
 }
 
 func (self *Set[T]) InsertIter(it iter.Seq[T]) {
-	it.ForEach(func(t T) { self.inner.Set(t) })
+	iter.ForEach(it, func(t T) { self.inner.Set(t) })
 }
 
 // Remove removes elements from the set.
@@ -97,23 +97,15 @@ func (self *Set[T]) Clone() *Set[T] {
 // Intersection returns the intersection of the two sets.
 func (self *Set[T]) Intersection(o *Set[T]) *Set[T] {
 	newSet := NewSet(self.cmp)
-	iter.ForEach(self.AscendIter(), func(t T) {
-		if o.Contains(t) {
-			newSet.Insert(t)
-		}
-	})
+	newSet.InsertIter(iter.Filter(self.AscendIter(), o.Contains))
 	return newSet
 }
 
 // Difference returns the difference of the two sets.
 func (self *Set[T]) Difference(o *Set[T]) *Set[T] {
-	cloned := self.Clone()
-	iter.ForEach(self.AscendIter(), func(t T) {
-		if o.Contains(t) {
-			cloned.Remove(t)
-		}
-	})
-	return cloned
+	newSet := NewSet(self.cmp)
+	newSet.InsertIter(iter.Filter(self.AscendIter(), func(t T) bool { return !o.Contains(t) }))
+	return newSet
 }
 
 // Union returns the union of the two sets.
@@ -131,6 +123,16 @@ func (self *Set[T]) SubsetOf(o *Set[T]) bool {
 // SupersetOf returns true if the set is a superset of the other set.
 func (self *Set[T]) SupersetOf(o *Set[T]) bool {
 	return iter.All(o.AscendIter(), self.Contains)
+}
+
+func (self *Set[T]) Equal(o *Set[T]) bool {
+	return self.SupersetOf(o) && self.SubsetOf(o)
+}
+
+func (self *Set[T]) EqualIter(it iter.Seq[T]) bool {
+	o := NewSet(self.cmp)
+	o.InsertIter(it)
+	return self.Equal(o)
 }
 
 // Len returns the number of elements in the set.

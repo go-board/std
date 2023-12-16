@@ -273,7 +273,7 @@ func TestHashSet_UnmarshalJSON(t *testing.T) {
 
 func TestIterMut(t *testing.T) {
 	s := FromSlice[int](1, 2, 3, 4)
-	s.IterMut().ForEach(func(s *SetItem[int]) {
+	iter.ForEach(s.IterMut(), func(s *SetItem[int]) {
 		if s.Value()%2 == 0 {
 			s.Remove()
 		}

@@ -59,7 +59,7 @@ func (self *Map[K, V]) Insert(key K, value V) optional.Optional[V] {
 }
 
 func (self *Map[K, V]) InsertIter(it iter.Seq[MapEntry[K, V]]) {
-	iter.CollectFunc(it, func(me MapEntry[K, V]) bool { self.insertEntry(me); return true })
+	iter.ForEach(it, self.insertEntry)
 }
 
 func (self *Map[K, V]) insertEntry(entry MapEntry[K, V]) {
@@ -99,14 +99,14 @@ func (self *Map[K, V]) ContainsKey(key K) bool {
 	return ok
 }
 
-// ContainsAll tests is all elements in [Seq] is a valid map key.
+// ContainsAll tests is all elements in [iter.Seq] is a valid map key.
 func (self *Map[K, V]) ContainsAll(it iter.Seq[K]) bool {
-	return it.All(self.ContainsKey)
+	return iter.All(it, self.ContainsKey)
 }
 
 // ContainsAny tests is any elements in [Seq] is a valid map key.
 func (self *Map[K, V]) ContainsAny(it iter.Seq[K]) bool {
-	return it.Any(self.ContainsKey)
+	return iter.Any(it, self.ContainsKey)
 }
 
 // Remove removes the MapEntry for the given key.
@@ -114,9 +114,9 @@ func (self *Map[K, V]) Remove(key K) {
 	self.inner.Delete(self.keyEntry(key))
 }
 
-// RemoveIter remove all elements in [Seq].
+// RemoveIter remove all elements in [iter.Seq].
 func (self *Map[K, V]) RemoveIter(it iter.Seq[K]) {
-	it.ForEach(self.Remove)
+	iter.ForEach(it, self.Remove)
 }
 
 // First returns the first MapEntry.

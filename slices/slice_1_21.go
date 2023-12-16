@@ -64,6 +64,6 @@ func Contains[T comparable, S ~[]T](slice S, v T) bool {
 
 // ContainsBy returns true if the given slice contains an element that satisfies the given predicate.
 func ContainsBy[T any, S ~[]T](slice S, predicate func(T) bool) bool {
-	_, ok := iter.Find(ForwardSeq(slice), predicate)
+	_, ok := iter.Find(Forward(slice), predicate)
 	return ok
 }

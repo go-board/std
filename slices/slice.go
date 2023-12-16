@@ -14,7 +14,7 @@ import (
 	"github.com/go-board/std/result"
 )
 
-// Forward create a Seq in order.
+// Forward create a [iter.Seq] in forward order.
 //
 // Example:
 //
@@ -29,6 +29,11 @@ func Forward[E any, S ~[]E](s S) iter.Seq[E] {
 	}
 }
 
+// Backward create a [iter.Seq] in backward order.
+//
+// Example:
+//
+//	slices.Backward([]int{1,2,3}) => seq: 3,2,1
 func Backward[E any, S ~[]E](s S) iter.Seq[E] {
 	return func(yield func(E) bool) {
 		for i := len(s) - 1; i >= 0; i-- {
@@ -46,24 +51,11 @@ func Backward[E any, S ~[]E](s S) iter.Seq[E] {
 //	slices.Collect(seq(1,2,3)) => []int{1,2,3}
 func Collect[E any](s iter.Seq[E]) []E {
 	rs := make([]E, 0)
-	s(func(x E) bool {
-		rs = append(rs, x)
+	iter.CollectFunc(s, func(e E) bool {
+		rs = append(rs, e)
 		return true
 	})
 	return rs
-}
-
-// CollectInto collect all elements in [Seq] to a pre-allocated slice.
-//
-// Example:
-//
-//	ints := make([]int, 0, len(items))
-//	slices.CollectInto(seq(1,2,3), &ints) => ints: []int{1,2,3}
-func CollectInto[E any, S ~[]E](s iter.Seq[E], slice *S) {
-	iter.CollectFunc(s, func(e E) bool {
-		*slice = append(*slice, e)
-		return true
-	})
 }
 
 // All returns true if all elements in the given slice satisfy the given predicate.
@@ -73,7 +65,7 @@ func CollectInto[E any, S ~[]E](s iter.Seq[E], slice *S) {
 //	slices.All([]int{1,2,3}, func(x int) bool { return x > 0 }) => true
 //	slices.All([]int{1,2,3}, func(x int) bool { return x > 2 }) => false
 func All[T any, S ~[]T](slice S, f func(T) bool) bool {
-	return Forward(slice).All(f)
+	return iter.All(Forward(slice), f)
 }
 
 // Any returns true if any element in the given slice satisfies the given predicate.
@@ -83,19 +75,7 @@ func All[T any, S ~[]T](slice S, f func(T) bool) bool {
 //	slices.Any([]int{1,2,3}, func(x int) bool { return x > 2 }) => true
 //	slices.Any([]int{1,2,3}, func(x int) bool { return x > 6 }) => false
 func Any[T any, S ~[]T](slice S, f func(T) bool) bool {
-	return Forward(slice).Any(f)
-}
-
-// Concat all slices into a new one.
-//
-// Example:
-//
-//	slices.Concat([]int{1,2,3}, []int{4,5,6}, []int{7,8,9}) => []int{1,2,3,4,5,6,7,8,9}
-func Concat[T any, S ~[]T](slices ...S) S {
-	n := Fold(slices, 0, func(i int, s S) int { return i + len(s) })
-	s := make(S, 0, n)
-	s = Fold(slices, s, func(s S, s2 S) S { return append(s, s2...) })
-	return s
+	return iter.Any(Forward(slice), f)
 }
 
 // Chunk returns a new slice with the given slice split into smaller slices of the given size.
@@ -123,7 +103,7 @@ func Chunk[T any, S ~[]T](slice S, chunk int) []S {
 
 // Clone returns a new slice with the same elements as the given slice.
 func Clone[T any, S ~[]T](slice S) S {
-	return append(S(nil), slice...)
+	return Collect(Forward(slice))
 }
 
 // DeepClone returns a new slice with the cloned elements.
@@ -185,19 +165,25 @@ func DistinctBy[T any, K comparable, S ~[]T](slice S, key func(T) K) S {
 }
 
 // Filter returns a new slice with all elements that satisfy the given predicate.
+//
+// Example:
+//
+//	slices.Filter([]int{1,2,3,4,5,6}, func(x int) bool {return x%2 == 0}) => []int{2,4,6}
 func Filter[T any, S ~[]T](slice S, f func(T) bool) S {
-	return Collect(Forward(slice).Filter(f))
+	return Collect(iter.Filter(Forward(slice), f))
 }
 
 // FilterIndexed returns a new slice with all elements that satisfy the given predicate.
 func FilterIndexed[T any, S ~[]T](slice S, f func(T, int) bool) S {
-	res := make([]T, 0, len(slice))
-	for i, v := range slice {
-		if f(v, i) {
-			res = append(res, v)
-		}
-	}
-	return res
+	return Collect(
+		iter.Map(
+			iter.Filter(
+				iter.Enumerate(Forward(slice)),
+				func(t iter.Tuple[int, T]) bool { return f(t.Right, t.Left) },
+			),
+			func(e iter.Tuple[int, T]) T { return e.Right },
+		),
+	)
 }
 
 // Flatten returns a new slice with all elements in the given slice and all elements in all sub-slices.
@@ -213,14 +199,12 @@ func FlattenBy[T, E any, S ~[]T](slice S, f func(T) []E) []E {
 
 // FlatMap returns a new slice with all elements in the given slice and all elements in the given slices.
 func FlatMap[T, E any, S ~[]T](slice S, f func(T) []E) []E {
-	res := make([]E, 0, len(slice))
-	for _, v := range slice {
-		res = append(res, f(v)...)
-	}
-	return res
+	return Collect(iter.FlatMap(Forward(slice), func(x T) iter.Seq[E] { return Forward(f(x)) }))
 }
 
-// TryFold accumulates value starting with initial value and applying accumulator from left to right to current accum value and each element.
+// TryFold accumulates value starting with initial value and applying
+// accumulator from left to right to current accum value and each element.
+//
 // Returns the final accum value or initial value if the slice is empty.
 // If error occurred, return error early.
 func TryFold[T, A any, S ~[]T](slice S, initial A, accumulator func(A, T) (A, error)) (res A, err error) {
@@ -245,14 +229,12 @@ func FoldRight[T, A any, S ~[]T](slice S, initial A, accumulator func(A, T) A) A
 
 // ForEach iterates over the given slice and calls the given function for each element.
 func ForEach[T any, S ~[]T](slice S, f func(T)) {
-	Forward(slice).ForEach(f)
+	iter.ForEach(Forward(slice), f)
 }
 
 // ForEachIndexed iterates over the given slice and calls the given function for each element.
 func ForEachIndexed[T any, S ~[]T](slice S, f func(T, int)) {
-	iter.Enumerate(Forward(slice)).ForEach(func(t iter.Tuple[int, T]) {
-		f(t.Right, t.Left)
-	})
+	iter.ForEach(iter.Enumerate(Forward(slice)), func(t iter.Tuple[int, T]) { f(t.Right, t.Left) })
 }
 
 // GroupBy returns a new map with the given slice split into smaller slices of the given size.
@@ -300,6 +282,9 @@ func LastIndexBy[T any, S ~[]T](slice S, f func(T) bool) optional.Optional[int] 
 	return optional.None[int]()
 }
 
+// TryMap returns a new slice and an error.
+//
+// Stopping at first error occurred.
 func TryMap[T, U any, S ~[]T](slice S, f func(T) (U, error)) ([]U, error) {
 	res := make([]U, len(slice))
 	for i, v := range slice {
@@ -331,11 +316,7 @@ func TryMapIndexed[T, U any, S ~[]T](slice S, f func(T, int) (U, error)) ([]U, e
 
 // MapIndexed returns a new slice with the results of applying the given function to each element in the given slice.
 func MapIndexed[T, U any, S ~[]T](slice S, f func(T, int) U) []U {
-	res := make([]U, len(slice))
-	for i, v := range slice {
-		res[i] = f(v, i)
-	}
-	return res
+	return Collect(iter.Map(iter.Enumerate(Forward(slice)), func(x iter.Tuple[int, T]) U { return f(x.Right, x.Left) }))
 }
 
 // Max returns the maximum element in the given slice.
@@ -378,9 +359,6 @@ func None[T any, S ~[]T](slice S, f func(T) bool) bool {
 // If n is negative, it returns the last element plus one.
 // If n is greater than the length of the slice, it returns [optional.None].
 func Nth[T any, S ~[]T](slice S, n int) optional.Optional[T] {
-	if n < 0 {
-		n = len(slice) + n
-	}
 	if n < 0 || n >= len(slice) {
 		return optional.None[T]()
 	}
@@ -397,16 +375,8 @@ func Nth[T any, S ~[]T](slice S, n int) optional.Optional[T] {
 //	Partition([]int{1, 2, 3}, func(s int) bool { return s % 2 == 0 })
 //	returns: ([2], [1, 3])
 func Partition[T any, S ~[]T](slice S, f func(T) bool) (S, S) {
-	lhs := make(S, 0)
-	rhs := make(S, 0)
-	for _, e := range slice {
-		if f(e) {
-			lhs = append(lhs, e)
-		} else {
-			rhs = append(rhs, e)
-		}
-	}
-	return lhs, rhs
+	groups := GroupBy(slice, func(t T) bool { return f(t) })
+	return groups[true], groups[false]
 }
 
 // Reduce returns the result of applying the given function to each element in the given slice.
@@ -425,10 +395,7 @@ func ReduceRight[T any, S ~[]T](slice S, f func(T, T) T) optional.Optional[T] {
 //
 //	slices.Reverse([]int{1,2,3}) => []int{3,2,1}
 func Reverse[T any, S ~[]T](slice S) S {
-	for i, j := 0, len(slice)-1; i < j; i, j = i+1, j-1 {
-		slice[i], slice[j] = slice[j], slice[i]
-	}
-	return slice
+	return Collect(Backward(slice))
 }
 
 // Shuffle the given slice in-place.
@@ -481,18 +448,12 @@ func ToHashSet[T comparable, S ~[]T](slice S) map[T]struct{} {
 
 // First finds first element
 func First[T any, S ~[]T](slice S) optional.Optional[T] {
-	if len(slice) > 0 {
-		return optional.Some(slice[0])
-	}
-	return optional.None[T]()
+	return optional.FromPair(iter.First(Forward(slice), func(T) bool { return true }))
 }
 
 // Last finds last element
 func Last[T any, S ~[]T](slice S) optional.Optional[T] {
-	if len(slice) > 0 {
-		return optional.Some(slice[len(slice)-1])
-	}
-	return optional.None[T]()
+	return optional.FromPair(iter.Last(Forward(slice), func(T) bool { return true }))
 }
 
 // SpliceFirst return first element and rest if len > 0, else return (None, []T)
@@ -533,6 +494,7 @@ func SpliceLast[T any, S ~[]T](slice S) (optional.Optional[T], S) {
 //	interface: nil
 //	chan/map/slice: nil
 func FirstNonZero[T comparable, S ~[]T](slice S) T {
-	first, _ := iter.FilterZero(Forward(slice)).First(func(t T) bool { return true })
-	return first
+	var zero T
+	e, _ := iter.First(Forward(slice), func(t T) bool { return t == zero })
+	return e
 }

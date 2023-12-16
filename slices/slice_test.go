@@ -253,13 +253,16 @@ func TestIndex(t *testing.T) {
 			{Value: 3, Name: "Jack", Tags: []string{"b", "c"}},
 			{Value: 4, Name: "Jill", Tags: []string{"b", "c"}},
 		}
-		by := func(lhs, rhs item) bool { return lhs.Value == rhs.Value }
 
-		found := slices.LastIndexBy(slice, slice[2], by)
+		found := slices.LastIndexBy(slice, func(i item) bool {
+			return i.Value == slice[2].Value
+		})
 		c.Assert(found.IsSome(), qt.IsTrue)
 		c.Assert(found.Value(), qt.DeepEquals, 2)
 
-		notFound := slices.LastIndexBy(slice, item{Value: 11}, by)
+		notFound := slices.LastIndexBy(slice, func(i item) bool {
+			return i.Value == 11
+		})
 		c.Assert(notFound.IsNone(), qt.IsTrue)
 	})
 	a.Run("contains", func(c *qt.C) {
@@ -298,7 +301,7 @@ func TestFlatten(t *testing.T) {
 			{1, 2, 3},
 			{4, 5, 6},
 		}
-		flat := slices.Flatten(slice)
+		flat := slices.Flatten[int](slice)
 		c.Assert(flat, qt.DeepEquals, []int{1, 2, 3, 4, 5, 6})
 	})
 	a.Run("flatBy", func(c *qt.C) {

@@ -14,7 +14,7 @@ type Tuple[A, B any] struct {
 //
 // Example:
 //
-//	iter.Enumerate(seq(1,2,3)) // seq: (0, 1), (1, 2), (2, 3)
+//	iter.Enumerate(seq(1,2,3)) => seq: (0, 1), (1, 2), (2, 3)
 func Enumerate[E any](s Seq[E]) Seq[Tuple[int, E]] {
 	i := -1
 	return func(yield func(Tuple[int, E]) bool) {
@@ -29,7 +29,7 @@ func TryForEach[E any](s Seq[E], f func(E) error) (err error) {
 	return
 }
 
-// ForEach call f on each element in Seq.
+// ForEach call f on each element in [Seq].
 func ForEach[E any](s Seq[E], f func(E)) {
 	s(func(x E) bool { f(x); return true })
 }
@@ -41,7 +41,7 @@ func ForEach[E any](s Seq[E], f func(E)) {
 //
 // Example:
 //
-//	iter.Filter(seq(1,2,3), func(x int) bool {return i%2==1}) // seq: 1, 3
+//	iter.Filter(seq(1,2,3), func(x int) bool {return i%2==1}) => seq: 1, 3
 func Filter[E any](s Seq[E], f func(E) bool) Seq[E] {
 	return func(yield func(E) bool) {
 		s(func(x E) bool {
@@ -66,6 +66,12 @@ func FilterMap[E, T any](s Seq[E], f func(E) (T, bool)) Seq[T] {
 	}
 }
 
+// FilterZero creates an iterator which remove zero variable from Seq.
+//
+// Example:
+//
+//	iter.FilterZero(seq(true, false, false, true)) => seq: true, true
+//	iter.FilterZero(seq(1, 0.0, 2., .3)) 		   => seq: 1, 2.0, 0.3
 func FilterZero[E comparable](s Seq[E]) Seq[E] {
 	var zero E
 	return Filter(s, func(e E) bool { return e != zero })
@@ -76,8 +82,8 @@ func FilterZero[E comparable](s Seq[E]) Seq[E] {
 //
 // Example:
 //
-//	iter.First(seq(1,2,3)) // 1, true
-//	iter.First(seq[int]()) // 0, false
+//	iter.First(seq(1,2,3)) => 1, true
+//	iter.First(seq[int]()) => 0, false
 func First[E any](s Seq[E], f func(E) bool) (m E, ok bool) {
 	return Find(s, func(e E) bool { return f(e) })
 }
@@ -87,23 +93,24 @@ func First[E any](s Seq[E], f func(E) bool) (m E, ok bool) {
 //
 // Example:
 //
-//	iter.Last(seq(1,2,3)) // 3, true
-//	iter.Last(seq[int]()) // 0, false
+//	iter.Last(seq(1,2,3)) => 3, true
+//	iter.Last(seq[int]()) => 0, false
 func Last[E any](s Seq[E], f func(E) bool) (m E, ok bool) {
-	return Find(s, func(e E) bool {
+	s(func(e E) bool {
 		if f(e) {
 			m = e
 			ok = true
 		}
 		return true
 	})
+	return
 }
 
 // Map call f on each element in [Seq], and map each element to another type.
 //
 // Example:
 //
-//	iter.Map(seq(1,2,3), strconv.Itoa) // seq: "1", "2", "3"
+//	iter.Map(seq(1,2,3), strconv.Itoa) => seq: "1", "2", "3"
 func Map[E, T any](s Seq[E], f func(E) T) Seq[T] {
 	return func(yield func(T) bool) {
 		s(func(x E) bool { return yield(f(x)) })
@@ -122,7 +129,7 @@ func Map[E, T any](s Seq[E], f func(E) T) Seq[T] {
 //			return 0, false
 //		}
 //		return i, true
-//	}) // seq: 1, 2
+//	}) => seq: 1, 2
 func MapWhile[E, T any](s Seq[E], f func(E) (T, bool)) Seq[T] {
 	return func(yield func(T) bool) {
 		s(func(e E) bool {
@@ -143,12 +150,12 @@ func MapWhile[E, T any](s Seq[E], f func(E) (T, bool)) Seq[T] {
 //
 // Example:
 //
-//	iter.TryFold(seq(1,2,3), 1, func(acc int, item int) (int, error) { return acc * item, nil }) // 6, nil
+//	iter.TryFold(seq(1,2,3), 1, func(acc int, item int) (int, error) { return acc * item, nil }) => 6, nil
 //	iter.TryFold(seq("1", "3", "e"), 1, func(acc int, item string) (int, error) {
 //		x, err := strconv.Atoi(item)
 //		if err != nil {return 0, err}
 //		return acc * x, nil
-//	}) // 0, err
+//	}) => 0, err
 func TryFold[E, A any](s Seq[E], init A, f func(A, E) (A, error)) (res A, err error) {
 	res = init
 	s(func(x E) bool { res, err = f(res, x); return err == nil })
@@ -160,7 +167,7 @@ func TryFold[E, A any](s Seq[E], init A, f func(A, E) (A, error)) (res A, err er
 //
 // Example:
 //
-//	iter.Fold(seq(1,2,3), 1, func(acc int, e int) int { return acc * e }) // 6
+//	iter.Fold(seq(1,2,3), 1, func(acc int, e int) int { return acc * e }) => 6
 func Fold[E, A any](s Seq[E], init A, f func(A, E) A) A {
 	accum := init
 	s(func(x E) bool { accum = f(accum, x); return true })
@@ -172,8 +179,8 @@ func Fold[E, A any](s Seq[E], init A, f func(A, E) A) A {
 //
 // Example:
 //
-//	iter.Reduce(seq(1,2,3), func(x, y int) int { return x * y }) // 6, true
-//	iter.Reduce(seq[int](), func(x, y int) int { return x * y }) // 0, false
+//	iter.Reduce(seq(1,2,3), func(x, y int) int { return x * y }) => 6, true
+//	iter.Reduce(seq[int](), func(x, y int) int { return x * y }) => 0, false
 func Reduce[E any](s Seq[E], f func(E, E) E) (result E, hasElem bool) {
 	s(func(x E) bool {
 		if !hasElem {
@@ -214,18 +221,19 @@ func FindMap[E, T any](s Seq[E], f func(E) (T, bool)) (t T, ok bool) {
 	return
 }
 
-func Index[E any](s Seq[E], f func(E) bool) (int, bool) {
-	var i int = -1
-	s(func(x E) bool { i++; return !f(x) })
-	return i, i >= 0
+// Index searches index of element which satisfying the given predicate.
+func Index[E any](s Seq[E], f func(E) bool) int {
+	i := -1
+	s(func(x E) bool { defer func() { i++ }(); return !f(x) })
+	return i
 }
 
 // All tests if every element of the iterator matches a predicate.
 //
 // Example:
 //
-//	iter.All(seq(1,2,3), func(x int) bool { return i > 0 }) // true
-//	iter.Any(seq(1,2,3), func(x int) bool { return i > 2 }) // false
+//	iter.All(seq(1,2,3), func(x int) bool { return i > 0 }) => true
+//	iter.Any(seq(1,2,3), func(x int) bool { return i > 2 }) => false
 func All[E any](s Seq[E], f func(E) bool) bool {
 	ok := true
 	s(func(x E) bool { ok = f(x); return ok })
@@ -236,8 +244,8 @@ func All[E any](s Seq[E], f func(E) bool) bool {
 //
 // Example:
 //
-//	iter.Any(seq(1,2,3), func(x int) bool { return i % 2 == 0 }) // true
-//	iter.Any(seq(1,2,3), func(x int) bool { return i < 0 })      // false
+//	iter.Any(seq(1,2,3), func(x int) bool { return i % 2 == 0 }) => true
+//	iter.Any(seq(1,2,3), func(x int) bool { return i < 0 })      => false
 func Any[E any](s Seq[E], f func(E) bool) bool {
 	var ok bool
 	s(func(x E) bool {
@@ -254,9 +262,9 @@ func Any[E any](s Seq[E], f func(E) bool) bool {
 //
 // Example:
 //
-//	iter.Max(seq(1,2,3)) // 3, true
-//	iter.Max(seq[int]()) // 0, false
-func Max[E cmp.Ordered](s Seq[E]) (m E, hasElem bool) {
+//	iter.Max(seq(1,2,3)) => 3, true
+//	iter.Max(seq[int]()) => 0, false
+func Max[E cmp.Ordered](s Seq[E]) (E, bool) {
 	return MaxFunc(s, cmp.Compare[E])
 }
 
@@ -265,9 +273,9 @@ func Max[E cmp.Ordered](s Seq[E]) (m E, hasElem bool) {
 //
 // Example:
 //
-//	iter.MaxFunc(seq(1,2,3), cmp.Compare[int]) // 3, true
-//	iter.MaxFunc(seq[int](), cmp.Compare[int]) // 0, false
-func MaxFunc[E any](s Seq[E], f func(E, E) int) (m E, hasElem bool) {
+//	iter.MaxFunc(seq(1,2,3), cmp.Compare[int]) => 3, true
+//	iter.MaxFunc(seq[int](), cmp.Compare[int]) => 0, false
+func MaxFunc[E any](s Seq[E], f func(E, E) int) (E, bool) {
 	return Reduce(s, func(l, r E) E {
 		if f(l, r) > 0 {
 			return l
@@ -282,7 +290,7 @@ func MaxFunc[E any](s Seq[E], f func(E, E) int) (m E, hasElem bool) {
 //
 //	iter.Min(seq(1,2,3)) // 1, true
 //	iter.Min(seq[int]()) // 0, false
-func Min[E cmp.Ordered](s Seq[E]) (m E, hasElem bool) {
+func Min[E cmp.Ordered](s Seq[E]) (E, bool) {
 	return MinFunc(s, cmp.Compare[E])
 }
 
@@ -293,7 +301,7 @@ func Min[E cmp.Ordered](s Seq[E]) (m E, hasElem bool) {
 //
 //	iter.MinFunc(seq(1,2,3), cmp.Compare[int]) // 1, true
 //	iter.MinFunc(seq[int](), cmp.Compare[int]) // 0, false
-func MinFunc[E any](s Seq[E], f func(E, E) int) (m E, hasElem bool) {
+func MinFunc[E any](s Seq[E], f func(E, E) int) (E, bool) {
 	return Reduce(s, func(l, r E) E {
 		if f(l, r) < 0 {
 			return l
@@ -359,13 +367,10 @@ func IsSortedFunc[E any](s Seq[E], f func(E, E) int) bool {
 	var prev *E
 	ok := true
 	s(func(x E) bool {
-		if prev == nil {
-			prev = &x
-		} else {
-			if f(*prev, x) > 0 {
-				ok = false
-				return false
-			}
+		defer func() { prev = &x }()
+		if prev != nil && f(*prev, x) > 0 {
+			ok = false
+			return false
 		}
 		return true
 	})
@@ -400,13 +405,10 @@ func StepBy[E any](s Seq[E], n int) Seq[E] {
 //	iter.Take(seq(1,2,3), 5) // seq: 1,2,3
 func Take[E any](s Seq[E], n int) Seq[E] {
 	return func(yield func(E) bool) {
-		i := 0
+		i := -1
 		s(func(x E) bool {
-			if i < n {
-				i++
-				return yield(x)
-			}
-			return false
+			i++
+			return i < n && yield(x)
 		})
 	}
 }
@@ -416,12 +418,7 @@ func Take[E any](s Seq[E], n int) Seq[E] {
 // Stopping after an initial `false`.
 func TakeWhile[E any](s Seq[E], f func(E) bool) Seq[E] {
 	return func(yield func(E) bool) {
-		s(func(x E) bool {
-			if f(x) {
-				return yield(x)
-			}
-			return false
-		})
+		s(func(x E) bool { return f(x) && yield(x) })
 	}
 }
 
@@ -433,12 +430,12 @@ func TakeWhile[E any](s Seq[E], f func(E) bool) Seq[E] {
 //	iter.Skip(seq(1,2), 3)   // seq: none
 func Skip[E any](s Seq[E], n int) Seq[E] {
 	return func(yield func(E) bool) {
-		i := 0
+		i := -1
 		s(func(x E) bool {
+			i++
 			if i >= n {
 				return yield(x)
 			}
-			i++
 			return true
 		})
 	}
@@ -449,11 +446,14 @@ func SkipWhile[E any](s Seq[E], f func(E) bool) Seq[E] {
 	return func(yield func(E) bool) {
 		var ok bool
 		s(func(x E) bool {
-			if !ok && f(x) {
+			if !ok && !f(x) {
 				ok = true
-				return true
+				return yield(x)
 			}
-			return yield(x)
+			if ok {
+				return yield(x)
+			}
+			return true
 		})
 	}
 }
@@ -499,7 +499,7 @@ func DedupFunc[E any](s Seq[E], f func(E, E) bool) Seq[E] {
 		var prev E
 		var consumed bool
 		s(func(e E) bool {
-			prev = e
+			defer func() { prev = e }()
 			if !consumed {
 				consumed = true
 				return yield(e)
@@ -541,7 +541,7 @@ func FlatMap[E, T any](s Seq[E], f func(E) Seq[T]) Seq[T] {
 //
 // Example:
 //
-//	iter.Chain(seq(1,2,3), seq(4,5,6)) // seq: 1,2,3,4,5,6
+//	iter.Chain(seq(1,2,3), seq(4,5,6)) => seq: 1,2,3,4,5,6
 func Chain[E any](x Seq[E], y Seq[E]) Seq[E] {
 	return func(yield func(E) bool) {
 		shouldBreak := false

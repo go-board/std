@@ -23,7 +23,10 @@ func CmpFunc[E, F any](x Seq[E], y Seq[F], f func(E, F) int) int {
 		xe, oke := itx()
 		xf, okf := ity()
 		if oke == okf {
-			return f(xe, xf)
+			if c := f(xe, xf); c != 0 {
+				return c
+			}
+			continue
 		}
 		if oke {
 			return +1
@@ -57,11 +60,3 @@ func EqFunc[E, F any](x Seq[E], y Seq[F], f func(E, F) bool) bool {
 func Ne[E comparable](x Seq[E], y Seq[E]) bool { return !Eq(x, y) }
 
 func NeFunc[E, F any](x Seq[E], y Seq[F], f func(E, F) bool) bool { return !EqFunc(x, y, f) }
-
-func (s Seq[E]) CmpFunc(y Seq[E], f func(E, E) int) int  { return CmpFunc(s, y, f) }
-func (s Seq[E]) EqFunc(y Seq[E], f func(E, E) bool) bool { return EqFunc(s, y, f) }
-func (s Seq[E]) NeFunc(y Seq[E], f func(E, E) bool) bool { return NeFunc(s, y, f) }
-
-func (s Seq[E]) Iter() (func() (E, bool), func()) {
-	return iter.Pull(iter.Seq[E](s))
-}

@@ -15,7 +15,7 @@ func entry[K, V any](key K, value V) MapEntry[K, V] {
 	return MapEntry[K, V]{inner: tuple.PairOf(key, value)}
 }
 
-// Entries returns all entry of a map.
+// Entries returns all entry of a map as an [iter.Seq]
 func Entries[K comparable, V any, M ~map[K]V](m M) iter.Seq[MapEntry[K, V]] {
 	return func(yield func(MapEntry[K, V]) bool) {
 		for k, v := range m {
@@ -50,19 +50,16 @@ func Values[K comparable, V any, M ~map[K]V](m M) iter.Seq[V] {
 
 func Collect[K comparable, V any](s iter.Seq[MapEntry[K, V]]) map[K]V {
 	m := make(map[K]V)
-	CollectInto(s, m)
+	iter.CollectFunc(s, func(x MapEntry[K, V]) bool {
+		m[x.Key()] = x.Value()
+		return true
+	})
 	return m
-}
-
-func CollectInto[K comparable, V any, M ~map[K]V](s iter.Seq[MapEntry[K, V]], m M) {
-	iter.CollectFunc(s, func(x MapEntry[K, V]) bool { m[x.Key()] = x.Value(); return true })
 }
 
 // ForEach iter over the map, and call the udf on each k-v pair.
 func ForEach[K comparable, V any, M ~map[K]V](m M, f func(K, V)) {
-	iter.ForEach(Entries(m), func(x MapEntry[K, V]) {
-		f(x.Key(), x.Value())
-	})
+	iter.ForEach(Entries(m), func(x MapEntry[K, V]) { f(x.Key(), x.Value()) })
 }
 
 // Map call f on each k-v pair and maps to x-y pair into a new map.
@@ -90,7 +87,7 @@ func Retain[K comparable, V any, M ~map[K]V](m M, f func(K, V) bool) {
 
 // Filter keep those elements which match the given predicate function.
 func Filter[K comparable, V any, M ~map[K]V](m M, f func(K, V) bool) M {
-	return Collect(Entries(m).Filter(func(me MapEntry[K, V]) bool { return f(me.Key(), me.Value()) }))
+	return Collect(iter.Filter(Entries(m), func(me MapEntry[K, V]) bool { return f(me.Key(), me.Value()) }))
 }
 
 // FilterMap keep those elements which match the given predicate function and map to new type elements.

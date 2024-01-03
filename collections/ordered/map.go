@@ -18,7 +18,7 @@ type MapEntry[K, V any] struct{ inner tuple.Pair[K, V] }
 
 // MapEntryOf creates a new MapEntry.
 func MapEntryOf[K, V any](key K, value V) MapEntry[K, V] {
-	return MapEntry[K, V]{inner: tuple.NewPair(key, value)}
+	return MapEntry[K, V]{inner: tuple.MakePair(key, value)}
 }
 
 // Key returns the key of the MapEntry.
@@ -202,9 +202,10 @@ type KeyItem[K any, V any] struct {
 	m   *Map[K, V]
 }
 
-func (k *KeyItem[K, V]) Key() K  { return k.key }
-func (k *KeyItem[K, V]) Set(v V) { k.m.Insert(k.key, v) }
-func (k *KeyItem[K, V]) Remove() { k.m.Remove(k.key) }
+func (k *KeyItem[K, V]) Key() K   { return k.key }
+func (k *KeyItem[K, V]) Value() V { return k.m.Get(k.key).ValueOrZero() }
+func (k *KeyItem[K, V]) Set(v V)  { k.m.Insert(k.key, v) }
+func (k *KeyItem[K, V]) Remove()  { k.m.Remove(k.key) }
 
 type ValueItem[K any, V any] struct {
 	val V

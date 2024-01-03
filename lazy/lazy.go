@@ -1,51 +1,30 @@
 package lazy
 
-// LazyCell is a lazy value.
+// Cell is a lazy value cell.
 //
 // Which is initialized on the first access.
-type LazyCell[T any] struct {
+type Cell[T any] struct {
 	compute func() T
-	cell    OnceCell[T]
+	val     T
+	ok      bool
 }
 
-func NewLazyCell[T any](compute func() T) *LazyCell[T] {
-	return &LazyCell[T]{compute: compute, cell: OnceCell[T]{}}
+func NewCell[T any](compute func() T) *Cell[T] {
+	return &Cell[T]{compute: OnceValue(compute)}
 }
 
 // Get forces the evaluation of this lazy value and returns the computed result.
-func (self *LazyCell[T]) Get() T { return self.cell.GetOrInit(self.compute) }
-
-// Value is lazy evaluated data
-type Value[T any] interface{ Eval() T }
-
-type ptrValue[T any] struct{ ptr *T }
-
-func (p ptrValue[T]) Eval() T { return *p.ptr }
-
-func PtrOf[T any](v *T) Value[T] { return ptrValue[T]{ptr: v} }
-
-type fnValue[T any] struct{ inner func() T }
-
-func (f fnValue[T]) Eval() T { return f.inner() }
-
-func FuncOf[T any](f func() T) Value[T] { return fnValue[T]{inner: f} }
-
-type value[T any] struct{ inner T }
-
-func (v value[T]) Eval() T { return v.inner }
-
-func ValueOf[T any](v T) Value[T] { return value[T]{inner: v} }
-
-func Ternary[T any](ok bool, lhs Value[T], rhs Value[T]) T {
-	if ok {
-		return lhs.Eval()
+func (c *Cell[T]) Get() T {
+	if !c.ok {
+		c.ok = true
+		c.val = c.compute()
 	}
-	return rhs.Eval()
+	return c.val
 }
 
-func TernaryValue[T any](ok Value[bool], lhs Value[T], rhs Value[T]) T {
-	if ok.Eval() {
-		return lhs.Eval()
+func Ternary[E any](cond bool, x func() E, y func() E) E {
+	if cond {
+		return x()
 	}
-	return rhs.Eval()
+	return y()
 }

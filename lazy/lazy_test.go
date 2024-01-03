@@ -10,27 +10,53 @@ import (
 
 func TestLazyCell(t *testing.T) {
 	t.Run("Get", func(t *testing.T) {
-		lazyValue := lazy.NewLazyCell(func() int { return 100 })
+		lazyValue := lazy.NewCell(func() int { return 100 })
 		if lazyValue.Get() != 100 {
 			t.Errorf("lazy value should be 100, but got %d", lazyValue.Get())
 		}
 	})
 }
 
-func TestOnceCell(t *testing.T) {
-	cell := lazy.OnceCell[int]{}
-	a := quicktest.New(t)
-	a.Run("Get", func(c *quicktest.C) {
-		val := cell.Get()
-		c.Assert(val.IsNone(), quicktest.IsTrue)
+func TestOnceFunc(t *testing.T) {
+	x := 0
+	f := lazy.OnceFunc(func() { x++ })
+	f()
+	quicktest.Assert(t, x, quicktest.Equals, 1)
+	f()
+	quicktest.Assert(t, x, quicktest.Equals, 1)
+}
+
+func TestOnceValue(t *testing.T) {
+	i := 0
+	x := lazy.OnceValue(func() int {
+		i++
+		return i
 	})
-	a.Run("GetOrInit", func(c *quicktest.C) {
-		val := cell.GetOrInit(func() int { return 1 })
-		c.Assert(val, quicktest.Equals, 1)
+	quicktest.Assert(t, x(), quicktest.Equals, 1)
+	quicktest.Assert(t, x(), quicktest.Equals, 1)
+}
+
+func TestOnceValues(t *testing.T) {
+	i := 0
+	ok := false
+	f := lazy.OnceValues(func() (int, bool) {
+		i++
+		ok = !ok
+		return i, ok
 	})
-	a.Run("Get after init", func(c *quicktest.C) {
-		val := cell.Get()
-		c.Assert(val.IsSome(), quicktest.IsTrue)
-		c.Assert(val.Value(), quicktest.Equals, 1)
+	a, b := f()
+	quicktest.Assert(t, a, quicktest.Equals, 1)
+	quicktest.Assert(t, b, quicktest.IsTrue)
+	c, d := f()
+	quicktest.Assert(t, c, quicktest.Equals, 1)
+	quicktest.Assert(t, d, quicktest.IsTrue)
+}
+
+func TestTernary(t *testing.T) {
+	x := lazy.Ternary(true, func() int {
+		return 1
+	}, func() int {
+		return 2
 	})
+	quicktest.Assert(t, x, quicktest.Equals, 1)
 }

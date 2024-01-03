@@ -1,30 +1,10 @@
+//go:build !1.21
+
 package lazy
 
 import (
 	"sync"
-
-	"github.com/go-board/std/optional"
 )
-
-// OnceCell is a cell which can be written to only once.
-type OnceCell[T any] struct {
-	val  *T
-	once sync.Once
-}
-
-// Get return existing one if exists, otherwise panics
-func (self *OnceCell[T]) Get() optional.Optional[T] {
-	return optional.FromPtr(self.val)
-}
-
-// GetOrInit return existing one if existed, else create a new then return it
-func (self *OnceCell[T]) GetOrInit(f func() T) T {
-	self.once.Do(func() {
-		val := f()
-		self.val = &val
-	})
-	return *self.val
-}
 
 // OnceFunc port from unreleased std module, [sync.OnceFunc]
 func OnceFunc(f func()) func() {
@@ -81,14 +61,14 @@ func OnceValue[T any](f func() T) func() T {
 	}
 }
 
-// OnceResult port from unreleased std module, [sync.OnceValues]
-func OnceResult[T any](f func() (T, error)) func() (T, error) {
+// OnceValues port from unreleased std module, [sync.OnceValues]
+func OnceValues[E, T any](f func() (E, T)) func() (E, T) {
 	var (
-		once   sync.Once
-		valid  bool
-		p      any
-		result T
-		err    error
+		once  sync.Once
+		valid bool
+		p     any
+		e     E
+		t     T
 	)
 	g := func() {
 		defer func() {
@@ -97,14 +77,14 @@ func OnceResult[T any](f func() (T, error)) func() (T, error) {
 				panic(p)
 			}
 		}()
-		result, err = f()
+		e, t = f()
 		valid = true
 	}
-	return func() (T, error) {
+	return func() (E, T) {
 		once.Do(g)
 		if !valid {
 			panic(p)
 		}
-		return result, err
+		return e, t
 	}
 }

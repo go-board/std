@@ -10,29 +10,26 @@ type Result[T any] struct {
 	err  error
 }
 
+// FromPair create a new Result from a value or an error.
+func FromPair[T any](data T, err error) Result[T] { return Result[T]{data, err} }
+
+// Ok create a new Result from a value.
+func Ok[T any](data T) Result[T] { return Result[T]{data: data} }
+
+// Err create a new Result from an error.
+func Err[T any](err error) Result[T] { return Result[T]{err: err} }
+
+// Errorf create a new Result from a formatted error.
+func Errorf[T any](format string, args ...any) Result[T] {
+	return Err[T](fmt.Errorf(format, args...))
+}
+
 // String implements fmt.Stringer.
 func (self Result[T]) String() string {
 	if self.IsOk() {
 		return fmt.Sprintf("Ok(%+v)", self.data)
 	}
 	return fmt.Sprintf("Err(%+v)", self.err)
-}
-
-// FromPair create a new Result from a value or an error.
-func FromPair[T any](data T, err error) Result[T] { return Result[T]{data, err} }
-
-// Ok create a new Result from a value.
-func Ok[T any](data T) Result[T] { return FromPair(data, nil) }
-
-// Err create a new Result from an error.
-func Err[T any](err error) Result[T] {
-	var ok T
-	return FromPair(ok, err)
-}
-
-// Errorf create a new Result from a formatted error.
-func Errorf[T any](format string, args ...any) Result[T] {
-	return Err[T](fmt.Errorf(format, args...))
 }
 
 // IsOk returns true if the Result is Ok.
@@ -77,20 +74,20 @@ func (self Result[T]) Value() T {
 }
 
 // ValueOr returns the value of the Result if it is Ok, otherwise return the given value.
-func (self Result[T]) ValueOr(defaultValue T) T {
+func (self Result[T]) ValueOr(v T) T {
 	if self.IsOk() {
 		return self.data
 	}
-	return defaultValue
+	return v
 }
 
 // ValueOrElse returns the value of the Result if it is Ok,
 // otherwise return the result of calling the given function.
-func (self Result[T]) ValueOrElse(defaultFunc func() T) T {
+func (self Result[T]) ValueOrElse(f func() T) T {
 	if self.IsOk() {
 		return self.data
 	}
-	return defaultFunc()
+	return f()
 }
 
 // ValueOrZero returns the value of the Result if it is Ok,
@@ -112,25 +109,16 @@ func (self Result[T]) Error() error {
 }
 
 // IfOk call the function if the Result is Ok.
-func (self Result[T]) IfOk(consume func(T)) {
+func (self Result[T]) IfOk(f func(T)) {
 	if self.IsOk() {
-		consume(self.Value())
+		f(self.Value())
 	}
 }
 
 // IfErr call the function if the Result is Err.
-func (self Result[T]) IfErr(consume func(error)) {
+func (self Result[T]) IfErr(f func(error)) {
 	if self.IsErr() {
-		consume(self.Error())
-	}
-}
-
-// Match call onOk if the Result is Ok, otherwise call onErr.
-func (self Result[T]) Match(onOk func(T), onErr func(error)) {
-	if self.IsErr() {
-		onErr(self.err)
-	} else {
-		onOk(self.data)
+		f(self.Error())
 	}
 }
 
@@ -144,16 +132,9 @@ func (self Result[T]) AsRawParts() (data T, err error) {
 	return
 }
 
-func Map[A, B any](result Result[A], transformer func(A) B) Result[B] {
-	if result.IsOk() {
-		return Ok(transformer(result.Value()))
+func Map[T, U any](res Result[T], f func(T) U) Result[U] {
+	if res.IsOk() {
+		return Ok(f(res.data))
 	}
-	return Err[B](result.Error())
-}
-
-func Flatten[A any](result Result[Result[A]]) Result[A] {
-	if result.IsOk() {
-		return result.data
-	}
-	return Err[A](result.err)
+	return Err[U](res.err)
 }

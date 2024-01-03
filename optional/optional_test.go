@@ -1,9 +1,10 @@
 package optional_test
 
 import (
+	"testing"
+
 	"github.com/frankban/quicktest"
 	"github.com/go-board/std/optional"
-	"testing"
 )
 
 func TestCtor(t *testing.T) {

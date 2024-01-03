@@ -8,13 +8,6 @@ import (
 // Optional is a value that may or may not be present.
 type Optional[T any] struct{ data *T }
 
-func (self Optional[T]) String() string {
-	if self.IsSome() {
-		return fmt.Sprintf("Some(%+v)", *self.data)
-	}
-	return "None"
-}
-
 // FromPair returns an Optional from a value.
 func FromPair[T any](data T, ok bool) Optional[T] {
 	if ok {
@@ -24,14 +17,22 @@ func FromPair[T any](data T, ok bool) Optional[T] {
 }
 
 // FromPtr returns an Optional from a value.
-func FromPtr[T any](data *T) Optional[T] { return Optional[T]{data: data} }
+func FromPtr[T any, P ~*T](data P) Optional[T] { return Optional[T]{data: data} }
 
 // Some returns an Optional from a value.
+//
 // Oops!! We can't restrict T is not pointer type. Holy shit!!!
 func Some[T any](data T) Optional[T] { return Optional[T]{data: &data} }
 
 // None returns an Optional from a value.
 func None[T any]() Optional[T] { return Optional[T]{} }
+
+func (self Optional[T]) String() string {
+	if self.IsSome() {
+		return fmt.Sprintf("Some(%+v)", *self.data)
+	}
+	return "None"
+}
 
 // IsSome returns true if the Optional is Some.
 func (self Optional[T]) IsSome() bool { return self.data != nil }
@@ -40,9 +41,9 @@ func (self Optional[T]) IsSome() bool { return self.data != nil }
 func (self Optional[T]) IsNone() bool { return !self.IsSome() }
 
 // IsSomeAnd returns true if the Optional is Some and satisfies the given predicate.
-func (self Optional[T]) IsSomeAnd(predicate func(T) bool) bool {
+func (self Optional[T]) IsSomeAnd(f func(T) bool) bool {
 	if self.IsSome() {
-		return predicate(*self.data)
+		return f(*self.data)
 	}
 	return false
 }
@@ -56,19 +57,19 @@ func (self Optional[T]) Value() T {
 }
 
 // ValueOr returns the Optional if it is Some, otherwise returns the given default value.
-func (self Optional[T]) ValueOr(defaultValue T) T {
+func (self Optional[T]) ValueOr(v T) T {
 	if self.IsSome() {
 		return self.Value()
 	}
-	return defaultValue
+	return v
 }
 
 // ValueOrElse returns the Optional if it is Some, otherwise returns the given default value.
-func (self Optional[T]) ValueOrElse(defaultFunc func() T) T {
+func (self Optional[T]) ValueOrElse(f func() T) T {
 	if self.IsSome() {
 		return self.Value()
 	}
-	return defaultFunc()
+	return f()
 }
 
 // ValueOrZero returns the Optional if it is Some, otherwise returns the zero value of the type.
@@ -109,14 +110,14 @@ func (self Optional[T]) OrElse(f func() Optional[T]) Optional[T] {
 	return f()
 }
 
-func (self Optional[T]) IfPresent(consume func(T)) {
+func (self Optional[T]) IfPresent(f func(T)) {
 	if self.IsSome() {
-		consume(self.Value())
+		f(self.Value())
 	}
 }
 
-func (self Optional[T]) Filter(fn func(T) bool) Optional[T] {
-	if self.IsSome() && fn(self.Value()) {
+func (self Optional[T]) Filter(f func(T) bool) Optional[T] {
+	if self.IsSome() && f(self.Value()) {
 		return Some(self.Value())
 	}
 	return None[T]()
@@ -128,11 +129,11 @@ func (self Optional[T]) Map(f func(T) T) Optional[T] {
 }
 
 // MapOr returns None if the option is None, otherwise calls the given function and returns the result.
-func (self Optional[T]) MapOr(defaultValue T, f func(T) T) T {
+func (self Optional[T]) MapOr(v T, f func(T) T) T {
 	if self.IsSome() {
 		return f(self.Value())
 	}
-	return defaultValue
+	return v
 }
 
 // MapOrElse returns None if the option is None, otherwise calls the given function and returns the result.
@@ -189,9 +190,9 @@ func (self Optional[T]) UnmarshalJSON(v []byte) error {
 
 var _ json.Unmarshaler = (*Optional[any])(nil)
 
-func Map[A, B any](opt Optional[A], mapFn func(A) B) Optional[B] {
+func Map[A, B any](opt Optional[A], f func(A) B) Optional[B] {
 	if opt.IsSome() {
-		return Some(mapFn(opt.Value()))
+		return Some(f(opt.Value()))
 	}
 	return None[B]()
 }

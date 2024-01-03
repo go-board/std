@@ -41,5 +41,8 @@ func TestEqual(t *testing.T) {
 		ok := iter.Eq(seq(1), seq(1))
 		qt.Assert(t, ok, qt.IsTrue)
 	})
-	t.Run()
+	t.Run("ne", func(t *testing.T) {
+		ok := iter.Ne(seq(1), seq(2))
+		qt.Assert(t, ok, qt.IsTrue)
+	})
 }

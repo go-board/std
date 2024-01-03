@@ -1,8 +1,6 @@
 package source
 
 import (
-	"net"
-
 	"github.com/go-board/std/core"
 	"github.com/go-board/std/iter"
 )
@@ -38,18 +36,13 @@ func Gen[N core.Integer](from N, to N) iter.Seq[N] {
 
 // Once creates an [iter.Seq] that yields an element exactly once.
 func Once[E any](v E) iter.Seq[E] {
-	return func(yield func(E) bool) {
-		yield(v)
-	}
+	return func(yield func(E) bool) { yield(v) }
 }
 
 // Repeat creates an [iter.Seq] that endlessly repeats a single element.
 func Repeat[E any](v E) iter.Seq[E] {
 	return func(yield func(E) bool) {
-		for {
-			if !yield(v) {
-				break
-			}
+		for yield(v) {
 		}
 	}
 }
@@ -62,42 +55,4 @@ func RepeatTimes[E any, N core.Integer](v E, n N) iter.Seq[E] {
 // Empty creates an [iter.Seq] that yields nothing.
 func Empty[E any]() iter.Seq[E] {
 	return func(yield func(E) bool) {}
-}
-
-// Chan creates an [iter.Seq] from channel.
-func Chan[E any, C <-chan E](c C) iter.Seq[E] {
-	return func(yield func(E) bool) {
-		for x := range c {
-			if !yield(x) {
-				break
-			}
-		}
-	}
-}
-
-func Tcp(l net.TCPListener) iter.Seq[iter.Tuple[net.Conn, error]] {
-	return func(yield func(iter.Tuple[net.Conn, error]) bool) {
-		for yield(iter.MakeTuple(l.Accept())) {
-		}
-	}
-}
-
-func Runes(s string) iter.Seq[rune] {
-	return func(yield func(rune) bool) {
-		for _, x := range s {
-			if !yield(x) {
-				break
-			}
-		}
-	}
-}
-
-func Bytes(s string) iter.Seq[byte] {
-	return func(yield func(byte) bool) {
-		for _, x := range []byte(s) {
-			if !yield(x) {
-				break
-			}
-		}
-	}
 }

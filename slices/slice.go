@@ -12,6 +12,7 @@ import (
 	"github.com/go-board/std/operator"
 	"github.com/go-board/std/optional"
 	"github.com/go-board/std/result"
+	"github.com/go-board/std/tuple"
 )
 
 // Forward create a [iter.Seq] in forward order.
@@ -183,9 +184,9 @@ func FilterIndexed[T any, S ~[]T](slice S, f func(T, int) bool) S {
 		iter.Map(
 			iter.Filter(
 				iter.Enumerate(Forward(slice)),
-				func(t iter.Tuple[int, T]) bool { return f(t.Right, t.Left) },
+				func(t tuple.Pair[int, T]) bool { return f(t.Second, t.First) },
 			),
-			func(e iter.Tuple[int, T]) T { return e.Right },
+			func(e tuple.Pair[int, T]) T { return e.Second },
 		),
 	)
 }
@@ -238,7 +239,7 @@ func ForEach[T any, S ~[]T](slice S, f func(T)) {
 
 // ForEachIndexed iterates over the given slice and calls the given function for each element.
 func ForEachIndexed[T any, S ~[]T](slice S, f func(T, int)) {
-	iter.ForEach(iter.Enumerate(Forward(slice)), func(t iter.Tuple[int, T]) { f(t.Right, t.Left) })
+	iter.ForEach(iter.Enumerate(Forward(slice)), func(t tuple.Pair[int, T]) { f(t.Second, t.First) })
 }
 
 // GroupBy returns a new map with the given slice split into smaller slices of the given size.
@@ -325,7 +326,7 @@ func TryMapIndexed[T, U any, S ~[]T](slice S, f func(T, int) (U, error)) ([]U, e
 
 // MapIndexed returns a new slice with the results of applying the given function to each element in the given slice.
 func MapIndexed[T, U any, S ~[]T](slice S, f func(T, int) U) []U {
-	return Collect(iter.Map(iter.Enumerate(Forward(slice)), func(x iter.Tuple[int, T]) U { return f(x.Right, x.Left) }))
+	return Collect(iter.Map(iter.Enumerate(Forward(slice)), func(x tuple.Pair[int, T]) U { return f(x.Second, x.First) }))
 }
 
 // Max returns the maximum element in the given slice.

@@ -4,6 +4,7 @@ import (
 	"github.com/go-board/std/cmp"
 	"github.com/go-board/std/collections/ordered"
 	"github.com/go-board/std/iter"
+	"github.com/go-board/std/tuple"
 )
 
 func sliceSeq[E any, S ~[]E](slice S) iter.Seq[E] {
@@ -109,7 +110,7 @@ func ToOrderedSet[E any, V cmp.Ordered](f func(E) V) Collector[E, *ordered.Set[V
 }
 
 // GroupBy collects all elements in [iter.Seq] and group by key using given function.
-func GroupBy[E any, K comparable](f func(E) K) Collector[E, iter.Seq[iter.Tuple[K, iter.Seq[E]]]] {
+func GroupBy[E any, K comparable](f func(E) K) Collector[E, iter.Seq[tuple.Pair[K, iter.Seq[E]]]] {
 	return newCollectorImpl(
 		make(map[K][]E),
 		func(state map[K][]E, s iter.Seq[E]) map[K][]E {
@@ -117,10 +118,10 @@ func GroupBy[E any, K comparable](f func(E) K) Collector[E, iter.Seq[iter.Tuple[
 			return state
 		},
 		func(state map[K][]E, x E) map[K][]E { k := f(x); state[k] = append(state[k], x); return state },
-		func(state map[K][]E) iter.Seq[iter.Tuple[K, iter.Seq[E]]] {
-			return func(yield func(iter.Tuple[K, iter.Seq[E]]) bool) {
+		func(state map[K][]E) iter.Seq[tuple.Pair[K, iter.Seq[E]]] {
+			return func(yield func(tuple.Pair[K, iter.Seq[E]]) bool) {
 				for k, rs := range state {
-					if !yield(iter.MakeTuple(k, sliceSeq(rs))) {
+					if !yield(tuple.MakePair(k, sliceSeq(rs))) {
 						break
 					}
 				}
@@ -133,25 +134,25 @@ func GroupBy[E any, K comparable](f func(E) K) Collector[E, iter.Seq[iter.Tuple[
 // returns a new [iter.Seq] which elements yield in visit order.
 func Distinct[E comparable]() Collector[E, iter.Seq[E]] {
 	return newCollectorImpl(
-		iter.MakeTuple(make(map[E]struct{}), make([]E, 0)),
-		func(state iter.Tuple[map[E]struct{}, []E], s iter.Seq[E]) iter.Tuple[map[E]struct{}, []E] {
+		tuple.MakePair(make(map[E]struct{}), make([]E, 0)),
+		func(state tuple.Pair[map[E]struct{}, []E], s iter.Seq[E]) tuple.Pair[map[E]struct{}, []E] {
 			iter.ForEach(s, func(e E) {
-				if _, ok := state.Left[e]; !ok {
-					state.Left[e] = struct{}{}
-					state.Right = append(state.Right, e)
+				if _, ok := state.First[e]; !ok {
+					state.First[e] = struct{}{}
+					state.Second = append(state.Second, e)
 				}
 			})
 			return state
 		},
-		func(state iter.Tuple[map[E]struct{}, []E], x E) iter.Tuple[map[E]struct{}, []E] {
-			if _, ok := state.Left[x]; !ok {
-				state.Left[x] = struct{}{}
-				state.Right = append(state.Right, x)
+		func(state tuple.Pair[map[E]struct{}, []E], x E) tuple.Pair[map[E]struct{}, []E] {
+			if _, ok := state.First[x]; !ok {
+				state.First[x] = struct{}{}
+				state.Second = append(state.Second, x)
 			}
 			return state
 		},
-		func(state iter.Tuple[map[E]struct{}, []E]) iter.Seq[E] {
-			return sliceSeq(state.Right)
+		func(state tuple.Pair[map[E]struct{}, []E]) iter.Seq[E] {
+			return sliceSeq(state.Second)
 		},
 	)
 }
@@ -160,25 +161,25 @@ func Distinct[E comparable]() Collector[E, iter.Seq[E]] {
 // returns a new [iter.Seq] which elements yield in visit order.
 func DistinctFunc[E any](f func(E, E) int) Collector[E, iter.Seq[E]] {
 	return newCollectorImpl(
-		iter.MakeTuple(ordered.NewSet(f), make([]E, 0)),
-		func(state iter.Tuple[*ordered.Set[E], []E], s iter.Seq[E]) iter.Tuple[*ordered.Set[E], []E] {
+		tuple.MakePair(ordered.NewSet(f), make([]E, 0)),
+		func(state tuple.Pair[*ordered.Set[E], []E], s iter.Seq[E]) tuple.Pair[*ordered.Set[E], []E] {
 			iter.ForEach(s, func(e E) {
-				if !state.Left.Contains(e) {
-					state.Left.Insert(e)
-					state.Right = append(state.Right, e)
+				if !state.First.Contains(e) {
+					state.First.Insert(e)
+					state.Second = append(state.Second, e)
 				}
 			})
 			return state
 		},
-		func(state iter.Tuple[*ordered.Set[E], []E], x E) iter.Tuple[*ordered.Set[E], []E] {
-			if !state.Left.Contains(x) {
-				state.Left.Insert(x)
-				state.Right = append(state.Right, x)
+		func(state tuple.Pair[*ordered.Set[E], []E], x E) tuple.Pair[*ordered.Set[E], []E] {
+			if !state.First.Contains(x) {
+				state.First.Insert(x)
+				state.Second = append(state.Second, x)
 			}
 			return state
 		},
-		func(state iter.Tuple[*ordered.Set[E], []E]) iter.Seq[E] {
-			return sliceSeq(state.Right)
+		func(state tuple.Pair[*ordered.Set[E], []E]) iter.Seq[E] {
+			return sliceSeq(state.Second)
 		},
 	)
 }
@@ -187,29 +188,29 @@ func DistinctFunc[E any](f func(E, E) int) Collector[E, iter.Seq[E]] {
 //
 // The first [iter.Seq] contains elements that satisfies the predicate.
 // The second [iter.Seq]
-func Partition[E any](f func(E) bool) Collector[E, iter.Tuple[iter.Seq[E], iter.Seq[E]]] {
+func Partition[E any](f func(E) bool) Collector[E, tuple.Pair[iter.Seq[E], iter.Seq[E]]] {
 	return newCollectorImpl(
-		iter.MakeTuple(make([]E, 0), make([]E, 0)),
-		func(state iter.Tuple[[]E, []E], s iter.Seq[E]) iter.Tuple[[]E, []E] {
+		tuple.MakePair(make([]E, 0), make([]E, 0)),
+		func(state tuple.Pair[[]E, []E], s iter.Seq[E]) tuple.Pair[[]E, []E] {
 			iter.ForEach(s, func(e E) {
 				if f(e) {
-					state.Left = append(state.Left, e)
+					state.First = append(state.First, e)
 				} else {
-					state.Right = append(state.Right, e)
+					state.Second = append(state.Second, e)
 				}
 			})
 			return state
 		},
-		func(state iter.Tuple[[]E, []E], x E) iter.Tuple[[]E, []E] {
+		func(state tuple.Pair[[]E, []E], x E) tuple.Pair[[]E, []E] {
 			if f(x) {
-				state.Left = append(state.Left, x)
+				state.First = append(state.First, x)
 			} else {
-				state.Right = append(state.Right, x)
+				state.Second = append(state.Second, x)
 			}
 			return state
 		},
-		func(state iter.Tuple[[]E, []E]) iter.Tuple[iter.Seq[E], iter.Seq[E]] {
-			return iter.MakeTuple(sliceSeq(state.Left), sliceSeq(state.Right))
+		func(state tuple.Pair[[]E, []E]) tuple.Pair[iter.Seq[E], iter.Seq[E]] {
+			return tuple.MakePair(sliceSeq(state.First), sliceSeq(state.Second))
 		},
 	)
 }

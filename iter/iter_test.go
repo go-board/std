@@ -8,6 +8,7 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/go-board/std/cmp"
 	"github.com/go-board/std/iter"
+	"github.com/go-board/std/tuple"
 )
 
 func seq[E any](slice ...E) iter.Seq[E] {
@@ -28,7 +29,12 @@ func collect[E any](s iter.Seq[E]) []E {
 
 func TestEnumerate(t *testing.T) {
 	x := iter.Enumerate(seq(1, 2, 3))
-	qt.Assert(t, collect(x), qt.DeepEquals, []iter.Tuple[int, int]{{0, 1}, {1, 2}, {2, 3}})
+	qt.Assert(t, collect(x), qt.DeepEquals, []tuple.Pair[int, int]{{0, 1}, {1, 2}, {2, 3}})
+}
+
+func TestAppend(t *testing.T) {
+	x := iter.Append(seq(1), 2, 3)
+	qt.Assert(t, collect(x), qt.DeepEquals, []int{1, 2, 3})
 }
 
 func TestTryForEach(t *testing.T) {
@@ -39,9 +45,7 @@ func TestTryForEach(t *testing.T) {
 		return errors.New("err: elem must less than 2")
 	})
 	qt.Assert(t, err, qt.ErrorMatches, "err: elem must less than 2")
-	err2 := iter.TryForEach(seq(1, 2, 3), func(i int) error {
-		return nil
-	})
+	err2 := iter.TryForEach(seq(1, 2, 3), func(i int) error { return nil })
 	qt.Assert(t, err2, qt.IsNil)
 }
 

@@ -2,24 +2,18 @@ package iter
 
 import (
 	"github.com/go-board/std/cmp"
+	"github.com/go-board/std/tuple"
 )
-
-type Tuple[A, B any] struct {
-	Left  A
-	Right B
-}
-
-func MakeTuple[A, B any](a A, b B) Tuple[A, B] { return Tuple[A, B]{Left: a, Right: b} }
 
 // Enumerate create a new seq which yield (index, item) pair.
 //
 // Example:
 //
 //	iter.Enumerate(seq(1,2,3)) => seq: (0, 1), (1, 2), (2, 3)
-func Enumerate[E any](s Seq[E]) Seq[Tuple[int, E]] {
+func Enumerate[E any](s Seq[E]) Seq[tuple.Pair[int, E]] {
 	i := -1
-	return func(yield func(Tuple[int, E]) bool) {
-		s(func(e E) bool { i++; return yield(MakeTuple(i, e)) })
+	return func(yield func(tuple.Pair[int, E]) bool) {
+		s(func(e E) bool { i++; return yield(tuple.MakePair(i, e)) })
 	}
 }
 

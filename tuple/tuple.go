@@ -14,11 +14,8 @@ func (self Pair[A, B]) String() string {
 	return fmt.Sprintf("Pair(%+v, %+v)", self.First, self.Second)
 }
 
-func NewPair[A, B any](a A, b B) Pair[A, B] {
-	return Pair[A, B]{First: a, Second: b}
-}
-
-func PairOf[A, B any](a A, b B) Pair[A, B] { return Pair[A, B]{First: a, Second: b} }
+// MakePair create a pair from a and b.
+func MakePair[A, B any](a A, b B) Pair[A, B] { return Pair[A, B]{a, b} }
 
 // Triple is a tuple of three elements.
 type Triple[A, B, C any] struct {
@@ -32,10 +29,8 @@ func (self Triple[A, B, C]) String() string {
 }
 
 func MakeTriple[A, B, C any](a A, b B, c C) Triple[A, B, C] {
-	return Triple[A, B, C]{First: a, Second: b, Third: c}
+	return Triple[A, B, C]{a, b, c}
 }
-
-func TripleOf[A, B, C any](a A, b B, c C) Triple[A, B, C] { return MakeTriple(a, b, c) }
 
 // Tuple4 is a tuple of four elements.
 type Tuple4[A, B, C, D any] struct {
@@ -50,7 +45,7 @@ func (self Tuple4[A, B, C, D]) String() string {
 }
 
 func MakeTuple4[A, B, C, D any](a A, b B, c C, d D) Tuple4[A, B, C, D] {
-	return Tuple4[A, B, C, D]{First: a, Second: b, Third: c, Fourth: d}
+	return Tuple4[A, B, C, D]{a, b, c, d}
 }
 
 // Tuple5 is a tuple of five elements.
@@ -67,7 +62,7 @@ func (self Tuple5[A, B, C, D, E]) String() string {
 }
 
 func MakeTuple5[A, B, C, D, E any](a A, b B, c C, d D, e E) Tuple5[A, B, C, D, E] {
-	return Tuple5[A, B, C, D, E]{First: a, Second: b, Third: c, Fourth: d, Fifth: e}
+	return Tuple5[A, B, C, D, E]{a, b, c, d, e}
 }
 
 // Tuple6 is a tuple of six elements.
@@ -85,7 +80,7 @@ func (self Tuple6[A, B, C, D, E, F]) String() string {
 }
 
 func MakeTuple6[A, B, C, D, E, F any](a A, b B, c C, d D, e E, f F) Tuple6[A, B, C, D, E, F] {
-	return Tuple6[A, B, C, D, E, F]{First: a, Second: b, Third: c, Fourth: d, Fifth: e, Sixth: f}
+	return Tuple6[A, B, C, D, E, F]{a, b, c, d, e, f}
 }
 
 // Tuple7 is a tuple of seven elements.
@@ -104,7 +99,7 @@ func (self Tuple7[A, B, C, D, E, F, G]) String() string {
 }
 
 func MakeTuple7[A, B, C, D, E, F, G any](a A, b B, c C, d D, e E, f F, g G) Tuple7[A, B, C, D, E, F, G] {
-	return Tuple7[A, B, C, D, E, F, G]{First: a, Second: b, Third: c, Fourth: d, Fifth: e, Sixth: f, Seventh: g}
+	return Tuple7[A, B, C, D, E, F, G]{a, b, c, d, e, f, g}
 }
 
 // Tuple8 is a tuple of eight elements.
@@ -124,7 +119,7 @@ func (self Tuple8[A, B, C, D, E, F, G, H]) String() string {
 }
 
 func MakeTuple8[A, B, C, D, E, F, G, H any](a A, b B, c C, d D, e E, f F, g G, h H) Tuple8[A, B, C, D, E, F, G, H] {
-	return Tuple8[A, B, C, D, E, F, G, H]{First: a, Second: b, Third: c, Fourth: d, Fifth: e, Sixth: f, Seventh: g, Eighth: h}
+	return Tuple8[A, B, C, D, E, F, G, H]{a, b, c, d, e, f, g, h}
 }
 
 // Tuple9 is a tuple of nine elements.
@@ -145,5 +140,5 @@ func (self Tuple9[A, B, C, D, E, F, G, H, I]) String() string {
 }
 
 func MakeTuple9[A, B, C, D, E, F, G, H, I any](a A, b B, c C, d D, e E, f F, g G, h H, i I) Tuple9[A, B, C, D, E, F, G, H, I] {
-	return Tuple9[A, B, C, D, E, F, G, H, I]{First: a, Second: b, Third: c, Fourth: d, Fifth: e, Sixth: f, Seventh: g, Eighth: h, Ninth: i}
+	return Tuple9[A, B, C, D, E, F, G, H, I]{a, b, c, d, e, f, g, h, i}
 }

@@ -377,8 +377,8 @@ func TestSingle(t *testing.T) {
 func TestReverse(t *testing.T) {
 	a := qt.New(t)
 	slice := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-	slices.Reverse(slice)
-	a.Assert(slice, qt.DeepEquals, []int{10, 9, 8, 7, 6, 5, 4, 3, 2, 1})
+	reversed := slices.Reverse(slice)
+	a.Assert(reversed, qt.DeepEquals, []int{10, 9, 8, 7, 6, 5, 4, 3, 2, 1})
 }
 
 func TestMapSet(t *testing.T) {

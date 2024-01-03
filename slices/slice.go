@@ -143,8 +143,12 @@ func DifferenceBy[T any, S ~[]T](lhs S, rhs S, cmp func(T, T) int) S {
 }
 
 // Distinct returns a new slice with the given slice without duplicates.
+//
+// Example:
+//
+//	slices.Distinct([]int{1,2,3,2,1}) => []int{1,2,3}
 func Distinct[T comparable, S ~[]T](slice S) S {
-	return Collect(iter.Distinct(Forward(slice)))
+	return DistinctBy(slice, func(x T) T { return x })
 }
 
 // DistinctBy returns a new slice with the distinct elements of the given slice by the given function.
@@ -256,6 +260,7 @@ func IntersectionBy[T any, S ~[]T](lhs S, rhs S, cmp func(T, T) int) S {
 	return Collect(l.Intersection(r).AscendIter())
 }
 
+// Intersection returns a new slice with the elements that are in both give slices.
 func Intersection[T comparable, S ~[]T](lhs S, rhs S) S {
 	s := ToHashSet(lhs)
 	res := make([]T, 0)
@@ -298,6 +303,10 @@ func TryMap[T, U any, S ~[]T](slice S, f func(T) (U, error)) ([]U, error) {
 }
 
 // Map returns a new slice with the results of applying the given function to each element in the given slice.
+//
+// Example:
+//
+//	slices.Map([]int{1,2,3}, strconv.Itoa) => []string{"1", "2", "3"}
 func Map[T, U any, S ~[]T](slice S, f func(T) U) []U {
 	return Collect(iter.Map(Forward(slice), f))
 }
@@ -320,6 +329,10 @@ func MapIndexed[T, U any, S ~[]T](slice S, f func(T, int) U) []U {
 }
 
 // Max returns the maximum element in the given slice.
+//
+// Example:
+//
+//	slices.Max([]int{1,2,1}) => 2
 func Max[T cmp.Ordered, S ~[]T](slice S) optional.Optional[T] {
 	return optional.FromPair(iter.Max(Forward(slice)))
 }
@@ -330,11 +343,14 @@ func MaxBy[T any, S ~[]T](slice S, f func(T, T) int) optional.Optional[T] {
 }
 
 func MaxByKey[T any, K cmp.Ordered, S ~[]T](slice S, keyFn func(T) K) optional.Optional[T] {
-	f := func(x, y T) int { return cmp.Compare(keyFn(x), keyFn(y)) }
-	return MaxBy(slice, f)
+	return optional.FromPair(iter.MaxByKey(Forward(slice), keyFn))
 }
 
 // Min returns the minimum element in the given slice.
+//
+// Example:
+//
+//	slices.Min([]int{1,2,1}) => 1
 func Min[T core.Ordered, S ~[]T](slice S) optional.Optional[T] {
 	return optional.FromPair(iter.Min(Forward(slice)))
 }
@@ -345,8 +361,7 @@ func MinBy[T any, S ~[]T](slice S, f func(T, T) int) optional.Optional[T] {
 }
 
 func MinByKey[T any, K cmp.Ordered, S ~[]T](slice S, keyFn func(T) K) optional.Optional[T] {
-	f := func(x, y T) int { return cmp.Compare(keyFn(x), keyFn(y)) }
-	return MinBy(slice, f)
+	return optional.FromPair(iter.MinByKey(Forward(slice), keyFn))
 }
 
 // None returns true if no element in the given slice satisfies the given predicate.
@@ -380,6 +395,10 @@ func Partition[T any, S ~[]T](slice S, f func(T) bool) (S, S) {
 }
 
 // Reduce returns the result of applying the given function to each element in the given slice.
+//
+// Example:
+//
+//	slices.Reduce([]int{1,2,3}, func(x, y int) int {return x+y}) => 6
 func Reduce[T any, S ~[]T](slice S, f func(T, T) T) optional.Optional[T] {
 	return optional.FromPair(iter.Reduce(Forward(slice), f))
 }
@@ -451,9 +470,17 @@ func First[T any, S ~[]T](slice S) optional.Optional[T] {
 	return optional.FromPair(iter.First(Forward(slice), func(T) bool { return true }))
 }
 
+func FirstFunc[E any, S ~[]E](slice S, f func(E) bool) optional.Optional[E] {
+	return optional.FromPair(iter.First(Forward(slice), f))
+}
+
 // Last finds last element
 func Last[T any, S ~[]T](slice S) optional.Optional[T] {
 	return optional.FromPair(iter.Last(Forward(slice), func(T) bool { return true }))
+}
+
+func LastFunc[E any, S ~[]E](slice S, f func(E) bool) optional.Optional[E] {
+	return optional.FromPair(iter.Last(Forward(slice), f))
 }
 
 // SpliceFirst return first element and rest if len > 0, else return (None, []T)
@@ -495,6 +522,6 @@ func SpliceLast[T any, S ~[]T](slice S) (optional.Optional[T], S) {
 //	chan/map/slice: nil
 func FirstNonZero[T comparable, S ~[]T](slice S) T {
 	var zero T
-	e, _ := iter.First(Forward(slice), func(t T) bool { return t == zero })
+	e, _ := iter.First(Forward(slice), func(t T) bool { return t != zero })
 	return e
 }

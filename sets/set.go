@@ -30,7 +30,7 @@ func FromMapKeys[E comparable, V any, M ~map[E]V](m M) HashSet[E] {
 	return set
 }
 
-// FromIter create a HashSet from [Seq].
+// FromIter create a HashSet from [iter.Seq].
 func FromIter[E comparable](s iter.Seq[E]) HashSet[E] {
 	set := New[E]()
 	set.AddIter(s)
@@ -96,7 +96,11 @@ func (self HashSet[E]) IsEmpty() bool {
 }
 
 func (self HashSet[E]) ToMap() map[E]struct{} {
-	return self.Clone().inner
+	m := make(map[E]struct{})
+	for k := range self.inner {
+		m[k] = struct{}{}
+	}
+	return m
 }
 
 // Clone returns a copy of the set.

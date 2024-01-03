@@ -2,6 +2,7 @@ package maps
 
 import (
 	"github.com/go-board/std/iter"
+	"github.com/go-board/std/iter/collector"
 	"github.com/go-board/std/tuple"
 )
 
@@ -12,7 +13,7 @@ func (e MapEntry[K, V]) Key() K   { return e.inner.First }
 func (e MapEntry[K, V]) Value() V { return e.inner.Second }
 
 func entry[K, V any](key K, value V) MapEntry[K, V] {
-	return MapEntry[K, V]{inner: tuple.PairOf(key, value)}
+	return MapEntry[K, V]{inner: tuple.MakePair(key, value)}
 }
 
 // Entries returns all entry of a map as an [iter.Seq]
@@ -26,7 +27,12 @@ func Entries[K comparable, V any, M ~map[K]V](m M) iter.Seq[MapEntry[K, V]] {
 	}
 }
 
-// Keys return key slice of a map.
+// EntrySlice return entry slice of a map.
+func EntrySlice[K comparable, V any, M ~map[K]V](m M) []MapEntry[K, V] {
+	return collector.Collect(Entries(m), collector.ToSlice[MapEntry[K, V]]())
+}
+
+// Keys return key's [iter.Seq] of a map.
 func Keys[K comparable, V any, M ~map[K]V](m M) iter.Seq[K] {
 	return func(yield func(K) bool) {
 		for k := range m {
@@ -37,7 +43,12 @@ func Keys[K comparable, V any, M ~map[K]V](m M) iter.Seq[K] {
 	}
 }
 
-// Values returns value slice of a map.
+// KeySlice return key slice of a map.
+func KeySlice[K comparable, V any, M ~map[K]V](m M) []K {
+	return collector.Collect(Keys(m), collector.ToSlice[K]())
+}
+
+// Values return value's [iter.Seq] of a map.
 func Values[K comparable, V any, M ~map[K]V](m M) iter.Seq[V] {
 	return func(yield func(V) bool) {
 		for _, v := range m {
@@ -48,13 +59,15 @@ func Values[K comparable, V any, M ~map[K]V](m M) iter.Seq[V] {
 	}
 }
 
+// ValueSlice return value slice of a map.
+func ValueSlice[K comparable, V any, M ~map[K]V](m M) []V {
+	return collector.Collect(Values(m), collector.ToSlice[V]())
+}
+
+// Collect collects [iter.Seq] into a map
 func Collect[K comparable, V any](s iter.Seq[MapEntry[K, V]]) map[K]V {
-	m := make(map[K]V)
-	iter.CollectFunc(s, func(x MapEntry[K, V]) bool {
-		m[x.Key()] = x.Value()
-		return true
-	})
-	return m
+	extract := func(e MapEntry[K, V]) (K, V) { return e.Key(), e.Value() }
+	return collector.Collect(s, collector.ToMap(extract))
 }
 
 // ForEach iter over the map, and call the udf on each k-v pair.
@@ -121,10 +134,10 @@ func MergeFunc[K comparable, V any, M ~map[K]V](ms iter.Seq[M], onConflict func(
 }
 
 // Invert maps k-v to v-k, when key conflict, the back element will overwrite the previous one.
-func Invert[K, V comparable, M1 ~map[K]V, M2 ~map[V]K](m M1) M2 {
-	m2 := make(M2)
+func Invert[K, V comparable, M ~map[K]V](m M) map[V]K {
+	rs := make(map[V]K)
 	for k, v := range m {
-		m2[v] = k
+		rs[v] = k
 	}
-	return m2
+	return rs
 }

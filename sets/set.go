@@ -1,8 +1,6 @@
 package sets
 
 import (
-	"encoding/json"
-
 	"github.com/go-board/std/core"
 	"github.com/go-board/std/iter"
 )
@@ -11,52 +9,42 @@ var unit = struct{}{}
 
 type HashSet[E comparable] struct{ inner map[E]core.Unit }
 
-var _set HashSet[core.Unit]
-
-var (
-	_ json.Marshaler   = _set
-	_ json.Unmarshaler = _set
-)
+func New[E comparable]() HashSet[E] {
+	return HashSet[E]{inner: make(map[E]core.Unit)}
+}
 
 // FromSlice returns a new empty hash set.
 func FromSlice[E comparable](elements ...E) HashSet[E] {
-	inner := make(map[E]core.Unit, len(elements))
-	for _, element := range elements {
-		inner[element] = unit
+	set := New[E]()
+	for _, elem := range elements {
+		set.Add(elem)
 	}
-	return HashSet[E]{inner: inner}
+	return set
 }
 
-func FromMapKeys[E comparable, TValue any, M ~map[E]TValue](m M) HashSet[E] {
-	inner := make(map[E]core.Unit, len(m))
+func FromMapKeys[E comparable, V any, M ~map[E]V](m M) HashSet[E] {
+	set := New[E]()
 	for key := range m {
-		inner[key] = unit
+		set.Add(key)
 	}
-	return HashSet[E]{inner: inner}
+	return set
 }
 
 // FromIter create a HashSet from [Seq].
 func FromIter[E comparable](s iter.Seq[E]) HashSet[E] {
-	set := HashSet[E]{inner: make(map[E]core.Unit)}
+	set := New[E]()
 	set.AddIter(s)
 	return set
 }
 
-// Add adds the given keys to the set.
-func (self HashSet[E]) Add(keys ...E) {
-	for _, key := range keys {
-		self.inner[key] = unit
-	}
+// Add adds the given key to the set.
+func (self HashSet[E]) Add(key E) {
+	self.inner[key] = unit
 }
 
-// AddAll adds all elements from another [HashSet].
-func (self HashSet[E]) AddAll(other HashSet[E]) {
-	self.AddIter(other.Iter())
-}
-
-// AddIter adds all elements in Iter.
-func (self HashSet[E]) AddIter(s iter.Seq[E]) {
-	iter.ForEach(s, func(e E) { self.inner[e] = unit })
+// AddIter adds all elements in [iter.Seq] to the set.
+func (self HashSet[E]) AddIter(it iter.Seq[E]) {
+	iter.ForEach(it, self.Add)
 }
 
 // Remove removes the given key from the set.
@@ -64,6 +52,7 @@ func (self HashSet[E]) Remove(key E) {
 	delete(self.inner, key)
 }
 
+// RemoveIter removes all elements in [iter.Seq].
 func (self HashSet[E]) RemoveIter(it iter.Seq[E]) { iter.ForEach(it, self.Remove) }
 
 // Clear removes all keys from the set.
@@ -73,16 +62,11 @@ func (self HashSet[E]) Clear() {
 	}
 }
 
-func (self HashSet[E]) Filter(fn func(E) bool) HashSet[E] {
-	return FromIter(iter.Filter(self.Iter(), fn))
-}
-
+// Retain keep element that match the given predicate function.
+//
+// Otherwise, remove from [HashSet].
 func (self HashSet[E]) Retain(fn func(E) bool) {
 	iter.ForEach(iter.Filter(self.Iter(), func(e E) bool { return !fn(e) }), self.Remove)
-}
-
-func (self HashSet[E]) Map(fn func(E) E) HashSet[E] {
-	return FromIter(iter.Map(self.Iter(), fn))
 }
 
 // Contains returns true if the given key is in the set.
@@ -93,12 +77,12 @@ func (self HashSet[E]) Contains(key E) bool {
 
 // ContainsAll returns true if all the given keys are in the set.
 func (self HashSet[E]) ContainsAll(keys iter.Seq[E]) bool {
-	return iter.All(keys, func(e E) bool { return self.Contains(e) })
+	return iter.All(keys, self.Contains)
 }
 
 // ContainsAny returns true if any of the given keys are in the set.
 func (self HashSet[E]) ContainsAny(keys iter.Seq[E]) bool {
-	return iter.Any(keys, func(e E) bool { return self.Contains(e) })
+	return iter.Any(keys, self.Contains)
 }
 
 // Size returns the number of elements in the set.
@@ -112,11 +96,7 @@ func (self HashSet[E]) IsEmpty() bool {
 }
 
 func (self HashSet[E]) ToMap() map[E]struct{} {
-	m := make(map[E]struct{}, len(self.inner))
-	for k, v := range self.inner {
-		m[k] = v
-	}
-	return m
+	return self.Clone().inner
 }
 
 // Clone returns a copy of the set.
@@ -126,11 +106,7 @@ func (self HashSet[E]) Clone() HashSet[E] {
 
 // DeepCloneBy returns a copy of the set and clone each element use given clone func.
 func (self HashSet[E]) DeepCloneBy(clone func(E) E) HashSet[E] {
-	other := FromSlice[E]()
-	for key := range self.inner {
-		other.Add(clone(key))
-	}
-	return other
+	return FromIter(iter.Map(self.Iter(), clone))
 }
 
 // SupersetOf returns true if the given set is a superset of this set.
@@ -138,15 +114,23 @@ func (self HashSet[E]) SupersetOf(other HashSet[E]) bool {
 	return iter.All(other.Iter(), self.Contains)
 }
 
+func (self HashSet[E]) SupersetOfIter(it iter.Seq[E]) bool {
+	return iter.All(it, self.Contains)
+}
+
 // SubsetOf returns true if the given set is a subset of this set.
 func (self HashSet[E]) SubsetOf(other HashSet[E]) bool {
 	return iter.All(self.Iter(), other.Contains)
 }
 
+func (self HashSet[E]) SubsetOfIter(it iter.Seq[E]) bool {
+	return iter.All(self.Iter(), FromIter(it).Contains)
+}
+
 // Union returns a new set containing all the elements that are in either set.
 func (self HashSet[E]) Union(other HashSet[E]) HashSet[E] {
 	union := self.Clone()
-	union.AddAll(other)
+	union.AddIter(other.Iter())
 	return union
 }
 
@@ -156,14 +140,13 @@ func (self HashSet[E]) UnionIter(it iter.Seq[E]) HashSet[E] {
 	return union
 }
 
-// UnionAssign union another [HashSet] into self
-func (self HashSet[E]) UnionAssign(other HashSet[E]) {
-	self.AddAll(other)
-}
-
 // Intersection returns a new set containing all the elements that are in both sets.
 func (self HashSet[E]) Intersection(other HashSet[E]) HashSet[E] {
 	return FromIter(iter.Filter(self.Iter(), other.Contains))
+}
+
+func (self HashSet[E]) IntersectionIter(it iter.Seq[E]) HashSet[E] {
+	return self.Intersection(FromIter(it))
 }
 
 // Difference returns a new set containing all the elements that are in this set but not in the other set.
@@ -171,20 +154,17 @@ func (self HashSet[E]) Difference(other HashSet[E]) HashSet[E] {
 	return FromIter(iter.Filter(self.Iter(), func(e E) bool { return !other.Contains(e) }))
 }
 
+func (self HashSet[E]) DifferenceIter(it iter.Seq[E]) HashSet[E] {
+	return self.Difference(FromIter(it))
+}
+
 // SymmetricDifference returns a new set containing all the elements that are in this set or the other set but not in both.
 func (self HashSet[E]) SymmetricDifference(other HashSet[E]) HashSet[E] {
-	diff := FromSlice[E]()
-	for key := range self.inner {
-		if !other.Contains(key) {
-			diff.Add(key)
-		}
-	}
-	for key := range other.inner {
-		if !self.Contains(key) {
-			diff.Add(key)
-		}
-	}
-	return diff
+	return self.Union(other).Difference(self.Intersection(other))
+}
+
+func (self HashSet[E]) SymmetricDifferenceIter(it iter.Seq[E]) HashSet[E] {
+	return self.SymmetricDifference(FromIter(it))
 }
 
 // Equal returns true if the given set is equal to this set.
@@ -213,26 +193,17 @@ func (self HashSet[E]) Iter() iter.Seq[E] {
 func (self HashSet[E]) IterMut() iter.Seq[*SetItem[E]] {
 	return func(yield func(*SetItem[E]) bool) {
 		for key := range self.inner {
-			if !yield(&SetItem[E]{item: key, s: self}) {
+			if !yield(&SetItem[E]{item: key, set: self}) {
 				break
 			}
 		}
 	}
 }
 
-func (self HashSet[E]) MarshalJSON() ([]byte, error) {
-	return json.Marshal(self.inner)
-}
-
-func (self HashSet[E]) UnmarshalJSON(v []byte) error {
-	return json.Unmarshal(v, &self.inner)
-}
-
 type SetItem[E comparable] struct {
 	item E
-	s    HashSet[E]
+	set  HashSet[E]
 }
 
-func (s *SetItem[E]) Remove() { s.s.Remove(s.item) }
-
 func (s *SetItem[E]) Value() E { return s.item }
+func (s *SetItem[E]) Remove()  { s.set.Remove(s.item) }

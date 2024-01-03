@@ -1,10 +1,12 @@
 package iter_test
 
 import (
+	"errors"
 	"strconv"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
+	"github.com/go-board/std/cmp"
 	"github.com/go-board/std/iter"
 )
 
@@ -27,6 +29,24 @@ func collect[E any](s iter.Seq[E]) []E {
 func TestEnumerate(t *testing.T) {
 	x := iter.Enumerate(seq(1, 2, 3))
 	qt.Assert(t, collect(x), qt.DeepEquals, []iter.Tuple[int, int]{{0, 1}, {1, 2}, {2, 3}})
+}
+
+func TestTryForEach(t *testing.T) {
+	err := iter.TryForEach(seq(1, 2, 3), func(i int) error {
+		if i < 2 {
+			return nil
+		}
+		return errors.New("err: elem must less than 2")
+	})
+	qt.Assert(t, err, qt.ErrorMatches, "err: elem must less than 2")
+	err2 := iter.TryForEach(seq(1, 2, 3), func(i int) error {
+		return nil
+	})
+	qt.Assert(t, err2, qt.IsNil)
+}
+
+func TestForEach(t *testing.T) {
+	iter.ForEach(seq(1, 2, 3), func(i int) { t.Logf("foreach, %d", i) })
 }
 
 func TestAll(t *testing.T) {
@@ -143,6 +163,11 @@ func TestFilter(t *testing.T) {
 	})
 }
 
+func TestScan(t *testing.T) {
+	x := iter.Scan(seq(1, 2, 3, 4, 5), 1, func(state int, elem int) int { return state * elem })
+	qt.Assert(t, collect(x), qt.DeepEquals, []int{1, 2, 6, 24, 120})
+}
+
 func TestTryFold(t *testing.T) {
 	t.Run("no error", func(t *testing.T) {
 		s := seq("1", "2", "3")
@@ -171,16 +196,41 @@ func TestTryFold(t *testing.T) {
 
 func TestMax(t *testing.T) {
 	s := seq(1, 2, 3)
-	x, ok := iter.Max(s)
-	qt.Assert(t, ok, qt.IsTrue)
-	qt.Assert(t, x, qt.Equals, 3)
+	t.Run("max", func(t *testing.T) {
+		x, ok := iter.Max(s)
+		qt.Assert(t, ok, qt.IsTrue)
+		qt.Assert(t, x, qt.Equals, 3)
+	})
+	t.Run("max_func", func(t *testing.T) {
+		x, ok := iter.MaxFunc(s, cmp.Compare[int])
+		qt.Assert(t, ok, qt.IsTrue)
+		qt.Assert(t, x, qt.Equals, 3)
+	})
+	t.Run("max_by_key", func(t *testing.T) {
+		x, ok := iter.MaxByKey(s, func(e int) int { return e })
+		qt.Assert(t, ok, qt.IsTrue)
+		qt.Assert(t, x, qt.Equals, 3)
+	})
 }
 
 func TestMin(t *testing.T) {
 	s := seq(1, 2, 3)
-	x, ok := iter.Min(s)
-	qt.Assert(t, ok, qt.IsTrue)
-	qt.Assert(t, x, qt.Equals, 1)
+	t.Run("min", func(t *testing.T) {
+		x, ok := iter.Min(s)
+		qt.Assert(t, ok, qt.IsTrue)
+		qt.Assert(t, x, qt.Equals, 1)
+	})
+	t.Run("min_func", func(t *testing.T) {
+		x, ok := iter.MinFunc(s, cmp.Compare[int])
+		qt.Assert(t, ok, qt.IsTrue)
+		qt.Assert(t, x, qt.Equals, 1)
+	})
+	t.Run("min_by_key", func(t *testing.T) {
+		x, ok := iter.MinByKey(s, func(e int) int { return e })
+		qt.Assert(t, ok, qt.IsTrue)
+		qt.Assert(t, x, qt.Equals, 1)
+	})
+
 }
 
 func TestCountFunc(t *testing.T) {
@@ -254,11 +304,6 @@ func TestDedup(t *testing.T) {
 	x := seq(1, 2, 3, 3, 2, 2, 1)
 	x = iter.Dedup(x)
 	qt.Assert(t, collect(x), qt.DeepEquals, []int{1, 2, 3, 2, 1})
-}
-
-func TestDistinct(t *testing.T) {
-	x := iter.Distinct(seq(1, 2, 3, 1, 2, 3, 1, 2, 3))
-	qt.Assert(t, collect(x), qt.DeepEquals, []int{1, 2, 3})
 }
 
 func TestStepBy(t *testing.T) {

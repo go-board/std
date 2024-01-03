@@ -35,3 +35,11 @@ func TestCmp(t *testing.T) {
 		qt.Assert(t, ok, qt.IsTrue)
 	})
 }
+
+func TestEqual(t *testing.T) {
+	t.Run("eq", func(t *testing.T) {
+		ok := iter.Eq(seq(1), seq(1))
+		qt.Assert(t, ok, qt.IsTrue)
+	})
+	t.Run()
+}

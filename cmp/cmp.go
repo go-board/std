@@ -6,6 +6,17 @@ import (
 
 type Order int // -1, 0, 1
 
+func MakeOrder(o int) Order {
+	switch {
+	case o < 0:
+		return OrderLess
+	case o > 0:
+		return OrderGreater
+	default:
+		return OrderEqual
+	}
+}
+
 func (o Order) IsEq() bool { return o == 0 }
 func (o Order) IsNe() bool { return o != 0 }
 func (o Order) IsLt() bool { return o < 0 }
@@ -67,4 +78,52 @@ type Ord[A any] interface {
 	Eq[A]
 	PartialOrd[A]
 	Cmp(A) Order
+}
+
+type Comparator[A any] interface {
+	Cmp(lhs A, rhs A) int
+	Lt(lhs A, rhs A) bool
+	Le(lhs A, rhs A) bool
+	Gt(lhs A, rhs A) bool
+	Ge(lhs A, rhs A) bool
+	Eq(lhs A, rhs A) bool
+	Ne(lhs A, rhs A) bool
+}
+
+type ComparatorFunc[A any] func(A, A) int
+
+func (f ComparatorFunc[A]) Cmp(lhs A, rhs A) int {
+	return f(lhs, rhs)
+}
+
+func (f ComparatorFunc[A]) Lt(lhs A, rhs A) bool {
+	return f.Cmp(lhs, rhs) < 0
+}
+
+func (f ComparatorFunc[A]) Le(lhs A, rhs A) bool {
+	return f.Cmp(lhs, rhs) <= 0
+}
+
+func (f ComparatorFunc[A]) Gt(lhs A, rhs A) bool {
+	return f.Cmp(lhs, rhs) > 0
+}
+
+func (f ComparatorFunc[A]) Ge(lhs A, rhs A) bool {
+	return f.Cmp(lhs, rhs) >= 0
+}
+
+func (f ComparatorFunc[A]) Eq(lhs A, rhs A) bool {
+	return f.Cmp(lhs, rhs) == 0
+}
+
+func (f ComparatorFunc[A]) Ne(lhs A, rhs A) bool {
+	return f.Cmp(lhs, rhs) != 0
+}
+
+func MakeComparator[A Ordered]() Comparator[A] {
+	return ComparatorFunc[A](Compare[A])
+}
+
+func MakeComparatorFunc[A any](f func(A, A) int) Comparator[A] {
+	return ComparatorFunc[A](f)
 }

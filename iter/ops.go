@@ -2,6 +2,8 @@ package iter
 
 import (
 	"github.com/go-board/std/cmp"
+	"github.com/go-board/std/optional"
+	"github.com/go-board/std/result"
 	"github.com/go-board/std/tuple"
 )
 
@@ -9,7 +11,7 @@ import (
 //
 // Example:
 //
-//	iter.Enumerate(seq(1,2,3)) => seq: (0, 1), (1, 2), (2, 3)
+//	iter.Enumerate(seq(1,2,3)) => seq: pair(0, 1), pair(1, 2), pair(2, 3)
 func Enumerate[E any](s Seq[E]) Seq[tuple.Pair[int, E]] {
 	i := -1
 	return func(yield func(tuple.Pair[int, E]) bool) {
@@ -23,11 +25,8 @@ func Enumerate[E any](s Seq[E]) Seq[tuple.Pair[int, E]] {
 // Example:
 //
 //	iter.Append(seq(1), 2, 3) => seq: 1,2,3
-//	iter.Append(seq(1,2),) => seq: 1,2
+//	iter.Append(seq(1,2),)    => seq: 1,2
 func Append[E any](s Seq[E], elems ...E) Seq[E] {
-	if len(elems) == 0 {
-		return s
-	}
 	return func(yield func(E) bool) {
 		breakEarly := false
 		s(func(e E) bool {
@@ -41,6 +40,24 @@ func Append[E any](s Seq[E], elems ...E) Seq[E] {
 				}
 			}
 		}
+	}
+}
+
+// Prepend create a new Seq which yield each element from
+// additional elements and origin Seq.
+//
+// Example:
+//
+//	iter.Prepend(seq(1), 2, 3) => seq: 2,3,1
+//	iter.Prepend(seq(1,2),)    => seq: 1,2
+func Prepend[E any](s Seq[E], elems ...E) Seq[E] {
+	return func(yield func(E) bool) {
+		for _, e := range elems {
+			if !yield(e) {
+				return
+			}
+		}
+		s(yield)
 	}
 }
 
@@ -81,15 +98,14 @@ func Filter[E any](s Seq[E], f func(E) bool) Seq[E] {
 //
 //	slices.FilterMap(seq(1,2,3,4,5), func(x int) (string, bool) {
 //	    if x%2 == 1 {
-//		    return strconv.Itoa(x), true
+//	        return strconv.Itoa(x), true
 //	    }
 //	    return "", false
 //	}) => seq: "1", "3", "5"
 func FilterMap[E, T any](s Seq[E], f func(E) (T, bool)) Seq[T] {
 	return func(yield func(T) bool) {
 		s(func(e E) bool {
-			t, ok := f(e)
-			if ok {
+			if t, ok := f(e); ok {
 				return yield(t)
 			}
 			return true
@@ -108,31 +124,39 @@ func FilterZero[E comparable](s Seq[E]) Seq[E] {
 	return Filter(s, func(e E) bool { return e != zero })
 }
 
-// First try to find first element in [Seq],
-// if no elements in [Seq], return zero var and false.
+// First try to find first element in [Seq] that satisfies the given predicate,
+// if no matching elements in [Seq], return zero var and false.
 //
 // Example:
 //
-//	iter.First(seq(1,2,3)) => 1, true
-//	iter.First(seq[int]()) => 0, false
-func First[E any](s Seq[E], f func(E) bool) (result E, ok bool) {
-	s(func(x E) bool {
-		if f(x) {
-			result, ok = x, true
-			return false
-		}
-		return true
-	})
-	return
+//	iter.First(seq(1,2,3), func(x) bool { return true }) => 1, true
+//	iter.First(seq[int](), func(x) bool { return true }) => 0, false
+func First[E any](s Seq[E], f func(E) bool) (E, bool) {
+	return FirstOption(s, f).Get()
 }
 
-// Last try to find last element in [Seq],
-// if no elements in [Seq], return zero var and false.
+// FirstOption try to find first element in [Seq] that satisfies the given predicate,
+// if no matching elements in [Seq], return None.
 //
 // Example:
 //
-//	iter.Last(seq(1,2,3)) => 3, true
-//	iter.Last(seq[int]()) => 0, false
+//	iter.FirstOption(seq(1,2,3), func(x) bool { return true }) => Some(1)
+//	iter.FirstOption(seq[int](), func(x) bool { return true }) => None
+func FirstOption[E any](s Seq[E], f func(E) bool) optional.Optional[E] {
+	head := HeadOption(s)
+	if head.IsNone() || head.IsSomeAnd(f) {
+		return head
+	}
+	return FirstOption(Tail(s), f)
+}
+
+// Last try to find last element in [Seq] that satisfies the given predicate,
+// if no matching elements in [Seq], return zero var and false.
+//
+// Example:
+//
+//	iter.Last(seq(1,2,3), func(x) bool { return true }) => 3, true
+//	iter.Last(seq[int](), func(x) bool { return true }) => 0, false
 func Last[E any](s Seq[E], f func(E) bool) (m E, ok bool) {
 	s(func(e E) bool {
 		if f(e) {
@@ -141,6 +165,17 @@ func Last[E any](s Seq[E], f func(E) bool) (m E, ok bool) {
 		return true
 	})
 	return
+}
+
+// LastOption try to find last element in [Seq] that satisfies the given predicate,
+// if no matching element in [Seq], return None.
+//
+// Example:
+//
+//	iter.LastOption(seq(1,2,3), func(x) bool { return true }) => Some(3)
+//	iter.LastOption(seq[int](), func(x) bool { return true }) => None
+func LastOption[E any](s Seq[E], f func(E) bool) optional.Optional[E] {
+	return optional.FromPair(Last(s, f))
 }
 
 // Map call f on each element in [Seq], and map each element to another type.
@@ -199,6 +234,10 @@ func TryFold[E, A any](s Seq[E], init A, f func(A, E) (A, error)) (res A, err er
 	return
 }
 
+func TryFoldResult[E, A any](s Seq[E], init A, f func(A, E) (A, error)) result.Result[A] {
+	return result.FromPair(TryFold(s, init, f))
+}
+
 // Fold each element into an accumulator by applying an operation,
 // returning the final result.
 //
@@ -234,20 +273,34 @@ func Scan[E, A any](s Seq[E], init A, f func(state A, elem E) A) Seq[A] {
 //
 //	iter.Reduce(seq(1,2,3), func(x, y int) int { return x * y }) => 6, true
 //	iter.Reduce(seq[int](), func(x, y int) int { return x * y }) => 0, false
-func Reduce[E any](s Seq[E], f func(E, E) E) (result E, hasElem bool) {
-	s(func(x E) bool {
-		if !hasElem {
-			result, hasElem = x, true
-		} else {
-			result = f(result, x)
-		}
-		return true
-	})
-	return
+func Reduce[E any](s Seq[E], f func(E, E) E) (E, bool) {
+	return ReduceOption(s, f).Get()
+}
+
+// ReduceOption reduces the elements to a single one, by repeatedly applying a reducing
+// operation.
+//
+// Example:
+//
+//	iter.ReduceOption(seq(1,2,3), func(x, y int) int { return x * y }) => some(6)
+//	iter.ReduceOption(seq[int](), func(x, y int) int { return x * y }) => none
+func ReduceOption[E any](s Seq[E], f func(E, E) E) optional.Optional[E] {
+	head := HeadOption(s)
+	if head.IsNone() {
+		return head
+	}
+	return optional.Some(Fold(Tail(s), head.Value(), f))
 }
 
 // Find searches for an element of an iterator that satisfies a predicate.
-func Find[E any](s Seq[E], f func(E) bool) (E, bool) { return First(s, f) }
+func Find[E any](s Seq[E], f func(E) bool) (E, bool) {
+	return First(s, f)
+}
+
+// FindOption searches for an element of an iterator that satisfies a predicate.
+func FindOption[E any](s Seq[E], f func(E) bool) optional.Optional[E] {
+	return FirstOption(s, f)
+}
 
 // FindMap applies function to the elements of iterator and returns
 // the first non-none result.
@@ -262,21 +315,54 @@ func FindMap[E, T any](s Seq[E], f func(E) (T, bool)) (result T, ok bool) {
 	return
 }
 
+func FindMapOption[E, T any](s Seq[E], f func(E) (T, bool)) optional.Optional[T] {
+	return optional.FromPair(FindMap(s, f))
+}
+
 // Contains returns true if element is found in the [Seq].
 func Contains[E comparable](s Seq[E], x E) bool {
 	return ContainsFunc(s, func(e E) bool { return x == e })
 }
 
-// Contains returns true if element is satisfies the given predicate in the [Seq].
+// ContainsFunc returns true if element satisfies the given predicate in the [Seq].
 func ContainsFunc[E any](s Seq[E], f func(e E) bool) bool {
-	return Index(s, f) >= 0
+	return IndexFirstFunc(s, f) >= 0
 }
 
-// Index searches index of element which satisfying the given predicate.
-func Index[E any](s Seq[E], f func(E) bool) int {
-	i := -1
-	s(func(x E) bool { defer func() { i++ }(); return !f(x) })
-	return i
+func IndexFirst[E comparable](s Seq[E], v E) int {
+	return IndexFirstFunc(s, func(e E) bool { return e == v })
+}
+
+// IndexFirstFunc searches first index of element which satisfying the given predicate.
+func IndexFirstFunc[E any](s Seq[E], f func(E) bool) int {
+	x := Filter(Enumerate(s), func(t tuple.Pair[int, E]) bool { return f(t.Second()) })
+	z := FirstOption(x, func(t tuple.Pair[int, E]) bool { return true })
+	return optional.Map(z, tuple.Pair[int, E].First).ValueOr(-1)
+}
+
+func IndexLast[E comparable](s Seq[E], v E) int {
+	return IndexLastFunc(s, func(e E) bool { return e == v })
+}
+
+// IndexLastFunc searches last index of element which satisfying the given predicate.
+func IndexLastFunc[E any](s Seq[E], f func(E) bool) int {
+	x := Filter(Enumerate(s), func(t tuple.Pair[int, E]) bool { return f(t.Second()) })
+	z := LastOption(x, func(t tuple.Pair[int, E]) bool { return true })
+	return optional.Map(z, tuple.Pair[int, E].First).ValueOr(-1)
+}
+
+// Nth find the element which index is n.
+//
+// If index out of range, return zero val and false.
+func Nth[E any](s Seq[E], n int) (E, bool) {
+	return NthOption(s, n).Get()
+}
+
+// NthOption find the element which index is n.
+//
+// If index out of range, return [optional.None].
+func NthOption[E any](s Seq[E], n int) optional.Optional[E] {
+	return HeadOption(Skip(s, n))
 }
 
 // All tests if every element of the iterator matches a predicate.
@@ -284,7 +370,7 @@ func Index[E any](s Seq[E], f func(E) bool) int {
 // Example:
 //
 //	iter.All(seq(1,2,3), func(x int) bool { return i > 0 }) => true
-//	iter.Any(seq(1,2,3), func(x int) bool { return i > 2 }) => false
+//	iter.All(seq(1,2,3), func(x int) bool { return i > 2 }) => false
 func All[E any](s Seq[E], f func(E) bool) bool {
 	ok := true
 	s(func(x E) bool { ok = f(x); return ok })
@@ -318,6 +404,16 @@ func Max[E cmp.Ordered](s Seq[E]) (E, bool) {
 	return MaxFunc(s, cmp.Compare[E])
 }
 
+// MaxOption returns the maximum element of an iterator.
+//
+// Example:
+//
+//	iter.Max(seq(1,2,3)) => Some(3)
+//	iter.Max(seq[int]()) => None
+func MaxOption[E cmp.Ordered](s Seq[E]) optional.Optional[E] {
+	return optional.FromPair(Max(s))
+}
+
 // MaxFunc returns the element that gives the maximum value with respect to the
 // specified comparison function.
 //
@@ -326,12 +422,18 @@ func Max[E cmp.Ordered](s Seq[E]) (E, bool) {
 //	iter.MaxFunc(seq(1,2,3), cmp.Compare[int]) => 3, true
 //	iter.MaxFunc(seq[int](), cmp.Compare[int]) => 0, false
 func MaxFunc[E any](s Seq[E], f func(E, E) int) (E, bool) {
-	return Reduce(s, func(l, r E) E {
-		if f(l, r) > 0 {
-			return l
-		}
-		return r
-	})
+	return MaxFuncOption(s, f).Get()
+}
+
+// MaxFuncOption returns the element that gives the maximum value with respect to the
+// specified comparison function.
+//
+// Example:
+//
+//	iter.MaxFunc(seq(1,2,3), cmp.Compare[int]) => Some(3)
+//	iter.MaxFunc(seq[int](), cmp.Compare[int]) => None
+func MaxFuncOption[E any](s Seq[E], f func(E, E) int) optional.Optional[E] {
+	return ReduceOption(s, func(x, y E) E { return cmp.MaxFunc(f, x, y) })
 }
 
 // MaxByKey returns the element that gives the maximum value from the
@@ -345,6 +447,10 @@ func MaxByKey[E any, K cmp.Ordered](s Seq[E], f func(E) K) (E, bool) {
 	return MaxFunc(s, func(x E, y E) int { return cmp.Compare(f(x), f(y)) })
 }
 
+func MaxByKeyOption[E any, K cmp.Ordered](s Seq[E], f func(E) K) optional.Optional[E] {
+	return optional.FromPair(MaxByKey(s, f))
+}
+
 // Min returns the minimum element of an iterator.
 //
 // Example:
@@ -355,6 +461,10 @@ func Min[E cmp.Ordered](s Seq[E]) (E, bool) {
 	return MinFunc(s, cmp.Compare[E])
 }
 
+func MinOption[E cmp.Ordered](s Seq[E]) optional.Optional[E] {
+	return optional.FromPair(Min(s))
+}
+
 // MinFunc returns the element that gives the minimum value with respect to the
 // specified comparison function.
 //
@@ -363,12 +473,11 @@ func Min[E cmp.Ordered](s Seq[E]) (E, bool) {
 //	iter.MinFunc(seq(1,2,3), cmp.Compare[int]) // 1, true
 //	iter.MinFunc(seq[int](), cmp.Compare[int]) // 0, false
 func MinFunc[E any](s Seq[E], f func(E, E) int) (E, bool) {
-	return Reduce(s, func(l, r E) E {
-		if f(l, r) < 0 {
-			return l
-		}
-		return r
-	})
+	return Reduce(s, func(l, r E) E { return cmp.MinFunc(f, l, r) })
+}
+
+func MinFuncOption[E any](s Seq[E], f func(E, E) int) optional.Optional[E] {
+	return optional.FromPair(MinFunc(s, f))
 }
 
 // MinByKey returns the element that gives the minimum value from the
@@ -382,7 +491,60 @@ func MinByKey[E any, K cmp.Ordered](s Seq[E], f func(E) K) (E, bool) {
 	return MinFunc(s, func(x E, y E) int { return cmp.Compare(f(x), f(y)) })
 }
 
-// Count consumes the iterator, counting the number of elements
+func MinByKeyOption[E any, K cmp.Ordered](s Seq[E], f func(E) K) optional.Optional[E] {
+	return optional.FromPair(MinByKey(s, f))
+}
+
+// MinMax returns the minimum and maximum element in [Seq].
+//
+// If [Seq] is empty, the second return value is false.
+//
+// Example:
+//
+//	iter.MinMax(seq(1,2,3)) => pair(1, 3), true
+//	iter.MinMax(seq[int]()) => pair(0, 0), false
+func MinMax[E cmp.Ordered](s Seq[E]) (tuple.Pair[E, E], bool) {
+	return MinMaxFunc(s, cmp.Compare[E])
+}
+
+// MinMaxOption returns the minimum and maximum element in [Seq].
+//
+// If [Seq] is empty, the second return value is false.
+//
+// Example:
+//
+//	iter.MinMax(seq(1,2,3)) => pair(1, 3), true
+//	iter.MinMax(seq[int]()) => pair(0, 0), false
+func MinMaxOption[E cmp.Ordered](s Seq[E]) optional.Optional[tuple.Pair[E, E]] {
+	return optional.FromPair(MinMax(s))
+}
+
+func MinMaxFunc[E any](s Seq[E], f func(E, E) int) (tuple.Pair[E, E], bool) {
+	return MinMaxFuncOption(s, f).Get()
+}
+
+func MinMaxFuncOption[E any](s Seq[E], f func(E, E) int) optional.Optional[tuple.Pair[E, E]] {
+	var minimum, maximum E
+	var ok bool
+	ForEach(s, func(e E) {
+		if !ok {
+			minimum, maximum, ok = e, e, true
+		} else {
+			minimum, maximum = cmp.MinFunc(f, minimum, e), cmp.MaxFunc(f, maximum, e)
+		}
+	})
+	return optional.FromPair(tuple.MakePair(minimum, maximum), ok)
+}
+
+func MinMaxByKey[E any, K cmp.Ordered](s Seq[E], f func(E) K) (tuple.Pair[E, E], bool) {
+	return MinMaxFunc(s, func(x E, y E) int { return cmp.Compare(f(x), f(y)) })
+}
+
+func MinMaxByKeyOption[E any, K cmp.Ordered](s Seq[E], f func(E) K) optional.Optional[tuple.Pair[E, E]] {
+	return MinMaxFuncOption(s, func(x E, y E) int { return cmp.Compare(f(x), f(y)) })
+}
+
+// Count counting the number of elements in [Seq] that
 // equal to the given one and returning it.
 //
 // Example:
@@ -393,30 +555,28 @@ func Count[E comparable](s Seq[E], value E) int {
 	return CountFunc(s, func(e E) bool { return value == e })
 }
 
-// CountFunc consumes the iterator, counting the number of elements
+// CountFunc counting the number of elements in [Seq] that
 // match the predicate function and returning it.
 //
 // Example:
 //
 //	iter.CountFunc(seq(1,2,3), func(x int) bool { return x % 2 == 0 }) // 1
 func CountFunc[E any](s Seq[E], f func(E) bool) int {
-	n := 0
-	s(func(x E) bool {
-		if f(x) {
-			n++
+	return Fold(s, 0, func(i int, e E) int {
+		if f(e) {
+			i += 1
 		}
-		return true
+		return i
 	})
-	return n
 }
 
-// Size consumes the iterator, counting the number of iterations and returning it.
+// Size counting the number of iterations and returning it.
 //
 // Example:
 //
 //	iter.Size(seq(1,2,3)) // 3
 func Size[E any](s Seq[E]) int {
-	return CountFunc(s, func(E) bool { return true })
+	return Fold(s, 0, func(i int, e E) int { return i + 1 })
 }
 
 // IsSorted checks if the elements of this iterator are sorted.
@@ -449,6 +609,17 @@ func IsSortedFunc[E any](s Seq[E], f func(E, E) int) bool {
 	return ok
 }
 
+// IsSortedByKey checks if the elements of this iterator are sorted
+// using the key produced by given function.
+//
+// Example:
+//
+//	iter.IsSortedFunc(seq(1, 2, 3), cmp.Compare[int]) // true
+//	iter.IsSortedFunc(seq(2, 1, 3), cmp.Compare[int]) // false
+func IsSortedByKey[E any, K cmp.Ordered](s Seq[E], f func(E) K) bool {
+	return IsSortedFunc(s, func(x, y E) int { return cmp.Compare(f(x), f(y)) })
+}
+
 // StepBy creates an iterator starting at the same point, but stepping by
 // the given amount at each iteration.
 //
@@ -456,16 +627,10 @@ func IsSortedFunc[E any](s Seq[E], f func(E, E) int) bool {
 //
 //	iter.StepBy(seq(1,2,3,4,5), 2) // seq: 1,3,5
 func StepBy[E any](s Seq[E], n int) Seq[E] {
-	var i int
-	return func(yield func(E) bool) {
-		s(func(e E) bool {
-			if i%n == 0 && !yield(e) {
-				return false
-			}
-			i++
-			return true
-		})
-	}
+	return Map(
+		Filter(Enumerate(s), func(t tuple.Pair[int, E]) bool { return t.First()%n == 0 }),
+		func(e tuple.Pair[int, E]) E { return e.Second() },
+	)
 }
 
 // Take creates an iterator that yields the first `n` elements, or fewer
@@ -476,13 +641,9 @@ func StepBy[E any](s Seq[E], n int) Seq[E] {
 //	iter.Take(seq(1,2,3), 2) // seq: 1,2
 //	iter.Take(seq(1,2,3), 5) // seq: 1,2,3
 func Take[E any](s Seq[E], n int) Seq[E] {
-	return func(yield func(E) bool) {
-		i := -1
-		s(func(x E) bool {
-			i++
-			return i < n && yield(x)
-		})
-	}
+	takeFunc := func(t tuple.Pair[int, E]) bool { return t.First() < n }
+	takeIter := TakeWhile(Enumerate(s), takeFunc)
+	return Map(takeIter, tuple.Pair[int, E].Second)
 }
 
 // TakeWhile creates an iterator that yields elements based on a predicate.
@@ -501,16 +662,9 @@ func TakeWhile[E any](s Seq[E], f func(E) bool) Seq[E] {
 //	iter.Skip(seq(1,2,3), 1) // seq: 2,3
 //	iter.Skip(seq(1,2), 3)   // seq: none
 func Skip[E any](s Seq[E], n int) Seq[E] {
-	return func(yield func(E) bool) {
-		i := -1
-		s(func(x E) bool {
-			i++
-			if i >= n {
-				return yield(x)
-			}
-			return true
-		})
-	}
+	skipFunc := func(t tuple.Pair[int, E]) bool { return t.First() < n }
+	skipIter := SkipWhile(Enumerate(s), skipFunc)
+	return Map(skipIter, tuple.Pair[int, E].Second)
 }
 
 // SkipWhile creates an iterator that [`skip`]s elements based on a predicate.
@@ -637,6 +791,35 @@ func CollectFunc[E any](s Seq[E], collect func(E) bool) {
 	s(func(x E) bool { return collect(x) })
 }
 
+func Collect[E any, C any](s Seq[E], collect func(s Seq[E]) C) C {
+	return collect(s)
+}
+
+func empty[E any]() Seq[E] { return func(func(E) bool) {} }
+
+// Partition creates two [iter.Seq], split by the given predicate function.
+//
+// The first [iter.Seq] contains elements that satisfies the predicate.
+// The second [iter.Seq] contains elements that not satisfies the predicate.
+//
+// Example:
+//
+//	iter.Partition(seq(1,2,3,4,5,6), func(x int) bool { return i%2==0 }) => (seq: 2,4,6, seq: 1,3,5)
+func Partition[E any](s Seq[E], f func(E) bool) tuple.Pair[Seq[E], Seq[E]] {
+	return tuple.MakePair(Filter(s, f), Filter(s, func(e E) bool { return !f(e) }))
+}
+
+// IsPartitioned checks if the elements of this iterator are partitioned
+// according to the given predicate, such that all those that return true
+// precede all those that return false.
+//
+// Example:
+//
+//	iter.IsPartitioned(seq(1,2,3,4), func(x int) bool { return x>0 }) => true
+func IsPartitioned[E any](s Seq[E], f func(E) bool) bool {
+	return All(s, f) || !Any(s, f)
+}
+
 // Intersperse creates a new iterator which places a copy of `separator`
 // between adjacent items of the original iterator.
 //
@@ -669,6 +852,64 @@ func Inspect[E any](s Seq[E], f func(E)) Seq[E] {
 	return func(yield func(E) bool) {
 		s(func(e E) bool {
 			f(e)
+			return yield(e)
+		})
+	}
+}
+
+// Unzip converts a [Seq] of pair into a pair of [Seq].
+//
+// Example:
+//
+//	iter.Unzip(seq(pair(1,2), pair(3,4), pair(5,6))) => (seq: 1,3,5 seq: 2,4,6)
+func Unzip[A, B any](x Seq[tuple.Pair[A, B]]) tuple.Pair[Seq[A], Seq[B]] {
+	return UnzipFunc(x, tuple.Pair[A, B].Unpack)
+}
+
+// UnzipFunc converts a [Seq] into a pair of [Seq] by given unzip function.
+//
+// Example:
+//
+//	iter.UnzipFunc(seq(pair(1,2), pair(3,4), pair(5,6)), func(p pair) (int, int) { return p.first, p.second })
+//	=> (seq: 1,3,5 seq:2,4,6)
+func UnzipFunc[A, B, C any](x Seq[A], f func(A) (B, C)) tuple.Pair[Seq[B], Seq[C]] {
+	return Fold(x, tuple.MakePair(empty[B](), empty[C]()), func(acc tuple.Pair[Seq[B], Seq[C]], elem A) tuple.Pair[Seq[B], Seq[C]] {
+		b, c := f(elem)
+		return tuple.MakePair(Append(acc.First(), b), Append(acc.Second(), c))
+	})
+}
+
+func Head[E any](s Seq[E]) (E, bool) {
+	return HeadOption(s).Get()
+}
+
+// HeadOption return head element or None.
+//
+// Example:
+//
+//	iter.HeadOption(seq(1,2,3)) => Some(1)
+//	iter.HeadOption(seq[int]()) => None
+func HeadOption[E any](s Seq[E]) optional.Optional[E] {
+	var head E
+	var ok bool
+	s(func(e E) bool { head, ok = e, true; return false })
+	return optional.FromPair(head, ok)
+}
+
+// Tail returns a new [Seq] that skip head.
+//
+// Example:
+//
+//	iter.Tail(seq(1,2,3)) => seq: 2,3
+//	iter.Tail(seq[int]()) => seq:
+func Tail[E any](s Seq[E]) Seq[E] {
+	return func(yield func(E) bool) {
+		skip := false
+		s(func(e E) bool {
+			if !skip {
+				skip = true
+				return true
+			}
 			return yield(e)
 		})
 	}

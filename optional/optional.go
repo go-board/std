@@ -27,6 +27,17 @@ func Some[T any](data T) Optional[T] { return Optional[T]{data: &data} }
 // None returns an Optional from a value.
 func None[T any]() Optional[T] { return Optional[T]{} }
 
+func (self Optional[T]) Compare(other Optional[T], cmp func(T, T) int) int {
+	if self.IsSome() && other.IsSome() {
+		return cmp(self.Value(), other.Value())
+	} else if self.IsSome() {
+		return +1
+	} else if other.IsSome() {
+		return -1
+	}
+	return 0
+}
+
 func (self Optional[T]) String() string {
 	if self.IsSome() {
 		return fmt.Sprintf("Some(%+v)", *self.data)
@@ -46,6 +57,13 @@ func (self Optional[T]) IsSomeAnd(f func(T) bool) bool {
 		return f(*self.data)
 	}
 	return false
+}
+
+func (self Optional[T]) Expect(msg string) T {
+	if self.IsSome() {
+		return *self.data
+	}
+	panic(msg)
 }
 
 // Value returns the value of the Optional.
@@ -128,22 +146,6 @@ func (self Optional[T]) Map(f func(T) T) Optional[T] {
 	return Map(self, f)
 }
 
-// MapOr returns None if the option is None, otherwise calls the given function and returns the result.
-func (self Optional[T]) MapOr(v T, f func(T) T) T {
-	if self.IsSome() {
-		return f(self.Value())
-	}
-	return v
-}
-
-// MapOrElse returns None if the option is None, otherwise calls the given function and returns the result.
-func (self Optional[T]) MapOrElse(df func() T, f func(T) T) T {
-	if self.IsSome() {
-		return f(self.Value())
-	}
-	return df()
-}
-
 // Xor returns None if the option is None, otherwise returns the given opt.
 func (self Optional[T]) Xor(opt Optional[T]) Optional[T] {
 	if self.IsSome() && opt.IsNone() {
@@ -170,6 +172,13 @@ func (self Optional[T]) CloneBy(clone func(T) T) Optional[T] {
 		return None[T]()
 	}
 	return Some(clone(self.Value()))
+}
+
+func (self Optional[T]) Get() (data T, ok bool) {
+	if self.IsSome() {
+		data, ok = self.Value(), true
+	}
+	return
 }
 
 func (self Optional[T]) MarshalJSON() ([]byte, error) {
@@ -202,7 +211,18 @@ func Map[A, B any](opt Optional[A], f func(A) B) Optional[B] {
 // if the value is not convertible to the given type,
 // then the function returns None,
 // otherwise, it returns Some.
+//
+// Deprecated: use [TypeAssert] instead.
 func As[T any](v any) Optional[T] {
+	return TypeAssert[T](v)
+}
+
+// TypeAssert try to convert the value to the given type.
+//
+// if the value is not convertible to the given type,
+// then the function returns None,
+// otherwise, it returns Some.
+func TypeAssert[T any](v any) Optional[T] {
 	val, ok := v.(T)
 	return FromPair(val, ok)
 }

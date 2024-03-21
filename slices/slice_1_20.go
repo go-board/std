@@ -6,7 +6,7 @@ import (
 	"sort"
 
 	"github.com/go-board/std/cmp"
-	"github.com/go-board/std/core"
+	constraints "github.com/go-board/std/constraints"
 	"github.com/go-board/std/iter"
 	"github.com/go-board/std/operator"
 	"github.com/go-board/std/optional"
@@ -46,18 +46,18 @@ func SortBy[T any, S ~[]T](slice S, cmp func(lhs, rhs T) int) S {
 }
 
 // Sort sorts the given slice in-place.
-func Sort[T core.Ordered, S ~[]T](slice S) S {
+func Sort[T constraints.Ordered, S ~[]T](slice S) S {
 	return SortBy(slice, cmp.Compare[T])
 }
 
 // IsSorted returns true if the given slice is sorted.
-func IsSorted[T core.Ordered, S ~[]T](slice S) bool {
-	return IsSortedBy(slice, cmp.Compare[T])
+func IsSorted[T constraints.Ordered, S ~[]T](slice S) bool {
+	return iter.IsSorted(Forward(slice), cmp.Compare[T])
 }
 
 // IsSortedBy returns true if the given slice is sorted by the given less function.
 func IsSortedBy[T any, S ~[]T](slice S, cmp func(lhs, rhs T) int) bool {
-	return iter.IsSortedFunc(ForwardSeq(slice), cmp)
+	return iter.IsSortedFunc(Forward(slice), cmp)
 }
 
 // Index returns the index of the first element in the given slice that same with the given element.
@@ -67,21 +67,19 @@ func Index[T comparable, S ~[]T](slice S, v T) optional.Optional[int] {
 
 // IndexBy returns the index of the first element in the given slice that satisfies the given predicate.
 func IndexBy[T any, S ~[]T](slice S, predicate func(T) bool) optional.Optional[int] {
-	for i, v := range slice {
-		if predicate(v) {
-			return optional.Some(i)
-		}
+	x := iter.IndexFirstFunc(Forward(slice), predicate)
+	if x < 0 {
+		return optional.None[int]()
 	}
-	return optional.None[int]()
+	return optional.Some(x)
 }
 
 // Contains returns true if the given slice contains the given element.
 func Contains[T comparable, S ~[]T](slice S, v T) bool {
-	return Index(slice, v).IsSome()
+	return iter.Contains(Forward(slice), v)
 }
 
 // ContainsBy returns true if the given slice contains an element that satisfies the given predicate.
 func ContainsBy[T any, S ~[]T](slice S, predicate func(T) bool) bool {
-	_, ok := iter.Find(ForwardSeq(slice), predicate)
-	return ok
+	return iter.ContainsFunc(Forward(slice), predicate)
 }

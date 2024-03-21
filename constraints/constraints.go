@@ -1,4 +1,4 @@
-package core
+package constraints
 
 type Primitive interface{ Numeric | ~string | ~bool }
 
@@ -21,6 +21,3 @@ type Integer interface{ Signed | Unsigned }
 type Numeric interface{ Integer | Float | Complex }
 
 type Ordered interface{ Integer | Float | ~string }
-
-// Deprecated: use [Numeric] instead
-type Number = Numeric

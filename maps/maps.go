@@ -9,8 +9,8 @@ import (
 // MapEntry persist k-v pair of a map.
 type MapEntry[K, V any] struct{ inner tuple.Pair[K, V] }
 
-func (e MapEntry[K, V]) Key() K   { return e.inner.First }
-func (e MapEntry[K, V]) Value() V { return e.inner.Second }
+func (e MapEntry[K, V]) Key() K   { return e.inner.First() }
+func (e MapEntry[K, V]) Value() V { return e.inner.Second() }
 
 func entry[K, V any](key K, value V) MapEntry[K, V] {
 	return MapEntry[K, V]{inner: tuple.MakePair(key, value)}
@@ -68,6 +68,10 @@ func ValueSlice[K comparable, V any, M ~map[K]V](m M) []V {
 func Collect[K comparable, V any](s iter.Seq[MapEntry[K, V]]) map[K]V {
 	extract := func(e MapEntry[K, V]) (K, V) { return e.Key(), e.Value() }
 	return collector.Collect(s, collector.ToMap(extract))
+}
+
+func CollectMap[K comparable, V any, E any](s iter.Seq[E], f func(E) (K, V)) map[K]V {
+	return collector.Collect(s, collector.ToMap(f))
 }
 
 // ForEach iter over the map, and call the udf on each k-v pair.

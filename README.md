@@ -23,8 +23,6 @@ go get -u github.com/go-board/std
 ```
 
 ## Packages Hierarchy
-- [algorithm](https://github.com/go-board/std/blob/master/algorithm) common used algorithms
-    - [dp](https://github.com/go-board/std/blob/master/algorithm/dp) dynamic programming 
 - [clone](https://github.com/go-board/std/blob/master/clone) clone a object
 - [codec](https://github.com/go-board/std/blob/master/codec) encode and decode
 - [collections](https://github.com/go-board/std/blob/master/collections) common used collections
@@ -32,11 +30,12 @@ go get -u github.com/go-board/std
     - [linkedlist](https://github.com/go-board/std/blob/master/collections/linkedlist) linked list
     - [queue](https://github.com/go-board/std/blob/master/collections/queue) double ended queue
 - [cond](https://github.com/go-board/std/blob/master/cond) conditional operator
-- [core](https://github.com/go-board/std/blob/master/core) core types & constraints
+- [constraints](https://github.com/go-board/std/blob/master/constraints) core constraints
+- [fp](https://github.com/go-board/std/blob/master/fp) functional programing
 - [hash](https://github.com/go-board/std/blob/master/hash) hash a object
-- [iterator](https://github.com/go-board/std/blob/master/iterator) iterators
-    - [adapters](https://github.com/go-board/std/blob/master/iterator/adapters) adapter to create iterators & streams
-    - [stream](https://github.com/go-board/std/blob/master/iterator/stream) stream processing
+- [iter](https://github.com/go-board/std/blob/master/iter) iterators
+    - [collector](https://github.com/go-board/std/blob/master/iterator/collector) consume iter and collect to another type
+    - [source](https://github.com/go-board/std/blob/master/iterator/source) adapter to create iterators & streams
 - [lazy](https://github.com/go-board/std/blob/master/lazy) lazy evaluation & variables
 - [optional](https://github.com/go-board/std/blob/master/optional) optional values
 - [ptr](https://github.com/go-board/std/blob/master/ptr) convenient pointer operator

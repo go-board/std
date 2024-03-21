@@ -111,16 +111,4 @@ func TestMap(t *testing.T) {
 		y := optional.None[int]()
 		c.Assert(y.Map(func(i int) int { return i * 2 }).IsNone(), quicktest.IsTrue)
 	})
-	a.Run("map_or", func(c *quicktest.C) {
-		x := optional.Some(100)
-		c.Assert(x.MapOr(300, func(i int) int { return i * 2 }), quicktest.Equals, 200)
-		y := optional.None[int]()
-		c.Assert(y.MapOr(300, func(i int) int { return i * 2 }), quicktest.Equals, 300)
-	})
-	a.Run("map_or_else", func(c *quicktest.C) {
-		x := optional.Some(100)
-		c.Assert(x.MapOrElse(func() int { return 300 }, func(i int) int { return i * 2 }), quicktest.Equals, 200)
-		y := optional.None[int]()
-		c.Assert(y.MapOrElse(func() int { return 300 }, func(i int) int { return i * 2 }), quicktest.Equals, 300)
-	})
 }

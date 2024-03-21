@@ -9,6 +9,7 @@ import (
 	"github.com/go-board/std/cmp"
 	"github.com/go-board/std/iter"
 	"github.com/go-board/std/tuple"
+	cmp2 "github.com/google/go-cmp/cmp"
 )
 
 func seq[E any](slice ...E) iter.Seq[E] {
@@ -23,18 +24,25 @@ func seq[E any](slice ...E) iter.Seq[E] {
 
 func collect[E any](s iter.Seq[E]) []E {
 	var slice []E
-	iter.CollectFunc(s, func(e E) bool { slice = append(slice, e); return true })
+	iter.CollectFunc[E](s, func(e E) bool { slice = append(slice, e); return true })
 	return slice
 }
 
 func TestEnumerate(t *testing.T) {
 	x := iter.Enumerate(seq(1, 2, 3))
-	qt.Assert(t, collect(x), qt.DeepEquals, []tuple.Pair[int, int]{{0, 1}, {1, 2}, {2, 3}})
+	qt.Assert(t, collect(x), qt.CmpEquals(cmp2.Comparer(func(l, r tuple.Pair[int, int]) bool {
+		return l.First() == r.First() && l.Second() == r.Second()
+	})), []tuple.Pair[int, int]{tuple.MakePair(0, 1), tuple.MakePair(1, 2), tuple.MakePair(2, 3)})
 }
 
 func TestAppend(t *testing.T) {
 	x := iter.Append(seq(1), 2, 3)
 	qt.Assert(t, collect(x), qt.DeepEquals, []int{1, 2, 3})
+}
+
+func TestPrepend(t *testing.T) {
+	x := iter.Prepend(seq(1), 2, 3)
+	qt.Assert(t, collect(x), qt.DeepEquals, []int{2, 3, 1})
 }
 
 func TestTryForEach(t *testing.T) {
@@ -91,6 +99,14 @@ func TestFind(t *testing.T) {
 		qt.Assert(t, ok, qt.IsTrue)
 		qt.Assert(t, e, qt.Equals, -1)
 	})
+	t.Run("first option", func(t *testing.T) {
+		x := iter.FirstOption(seq(1, 2, -1, 0, 3), func(i int) bool {
+			return i < 0
+		})
+		qt.Assert(t, x.IsSomeAnd(func(i int) bool {
+			return i == -1
+		}), qt.IsTrue)
+	})
 	t.Run("last", func(t *testing.T) {
 		e, ok := iter.Last(seq(1, 2, 3, -1, 0, 5, -9, 0), func(i int) bool {
 			return i < 0
@@ -101,8 +117,41 @@ func TestFind(t *testing.T) {
 }
 
 func TestIndex(t *testing.T) {
-	x := iter.Index(seq(1, 2, 3), func(i int) bool { return i > 2 })
-	qt.Assert(t, x, qt.Equals, 2)
+	t.Run("index first", func(t *testing.T) {
+		x := iter.IndexFirst(seq(1, 2, 3), 2)
+		qt.Assert(t, x, qt.Equals, 1)
+	})
+	t.Run("index first func", func(t *testing.T) {
+		x := iter.IndexFirstFunc(seq(1, 2, 3), func(i int) bool { return i > 2 })
+		qt.Assert(t, x, qt.Equals, 2)
+	})
+	t.Run("index last", func(t *testing.T) {
+		x := iter.IndexLast(seq(1, 2, 3, 2, 1), 2)
+		qt.Assert(t, x, qt.Equals, 3)
+	})
+	t.Run("index last func", func(t *testing.T) {
+		x := iter.IndexLastFunc(seq(1, 2, 3, 2, 1), func(i int) bool {
+			return i == 2
+		})
+		qt.Assert(t, x, qt.Equals, 3)
+	})
+}
+
+func TestNth(t *testing.T) {
+	t.Run("nth", func(t *testing.T) {
+		x, ok := iter.Nth(seq(1, 2, 3), 1)
+		qt.Assert(t, ok, qt.IsTrue)
+		qt.Assert(t, x, qt.Equals, 2)
+		y, ok := iter.Nth(seq(1, 2, 3), 3)
+		qt.Assert(t, ok, qt.IsFalse)
+		qt.Assert(t, y, qt.Equals, 0)
+	})
+	t.Run("nth option", func(t *testing.T) {
+		x := iter.NthOption(seq(1, 2, 3), 0)
+		qt.Assert(t, x.IsSomeAnd(func(i int) bool { return i == 1 }), qt.IsTrue)
+		y := iter.NthOption(seq(1, 2, 3), 1)
+		qt.Assert(t, y.IsSomeAnd(func(i int) bool { return i == 2 }), qt.IsTrue)
+	})
 }
 
 func TestMap(t *testing.T) {
@@ -121,7 +170,6 @@ func TestMap(t *testing.T) {
 		})
 		qt.Assert(t, collect(x), qt.DeepEquals, []string{"1", "2"})
 	})
-
 }
 
 func TestFold(t *testing.T) {
@@ -141,6 +189,17 @@ func TestReduce(t *testing.T) {
 		s := seq[int]()
 		_, ok := iter.Reduce(s, func(a, b int) int { return a + b })
 		qt.Assert(t, ok, qt.IsFalse)
+	})
+	t.Run("has elems option", func(t *testing.T) {
+		s := seq(1, 2, 3)
+		x := iter.ReduceOption(s, func(i int, i2 int) int { return i + i2 })
+		qt.Assert(t, x.IsSome(), qt.IsTrue)
+		qt.Assert(t, x.Value(), qt.Equals, 6)
+	})
+	t.Run("no elems option", func(t *testing.T) {
+		s := seq[int]()
+		x := iter.ReduceOption(s, func(i int, i2 int) int { return i + i2 })
+		qt.Assert(t, x.IsNone(), qt.IsTrue)
 	})
 }
 
@@ -205,6 +264,11 @@ func TestMax(t *testing.T) {
 		qt.Assert(t, ok, qt.IsTrue)
 		qt.Assert(t, x, qt.Equals, 3)
 	})
+	t.Run("max option", func(t *testing.T) {
+		x := iter.MaxOption(s)
+		qt.Assert(t, x.IsSome(), qt.IsTrue)
+		qt.Assert(t, x.Value(), qt.Equals, 3)
+	})
 	t.Run("max_func", func(t *testing.T) {
 		x, ok := iter.MaxFunc(s, cmp.Compare[int])
 		qt.Assert(t, ok, qt.IsTrue)
@@ -234,7 +298,28 @@ func TestMin(t *testing.T) {
 		qt.Assert(t, ok, qt.IsTrue)
 		qt.Assert(t, x, qt.Equals, 1)
 	})
+}
 
+func TestMinMax(t *testing.T) {
+	s := seq(1, 2, 3)
+	t.Run("minmax", func(t *testing.T) {
+		x, ok := iter.MinMax(s)
+		qt.Assert(t, ok, qt.IsTrue)
+		qt.Assert(t, x.First(), qt.Equals, 1)
+		qt.Assert(t, x.Second(), qt.Equals, 3)
+	})
+	t.Run("minmax_func", func(t *testing.T) {
+		x, ok := iter.MinMaxFunc(s, cmp.Compare[int])
+		qt.Assert(t, ok, qt.IsTrue)
+		qt.Assert(t, x.First(), qt.Equals, 1)
+		qt.Assert(t, x.Second(), qt.Equals, 3)
+	})
+	t.Run("minmax_by_key", func(t *testing.T) {
+		x, ok := iter.MinMaxByKey(s, func(e int) int { return e })
+		qt.Assert(t, ok, qt.IsTrue)
+		qt.Assert(t, x.First(), qt.Equals, 1)
+		qt.Assert(t, x.Second(), qt.Equals, 3)
+	})
 }
 
 func TestCountFunc(t *testing.T) {
@@ -284,6 +369,16 @@ func TestSkip(t *testing.T) {
 	s := seq(1, 2, 3, 4, 5)
 	s = iter.Skip(s, 2)
 	qt.Assert(t, collect(s), qt.DeepEquals, []int{3, 4, 5})
+	t.Run("nest skip", func(t *testing.T) {
+		s := seq(1, 2, 3, 4, 5)
+		s = iter.Skip(s, 1)
+		s = iter.Skip(s, 1)
+		qt.Assert(t, collect(s), qt.DeepEquals, []int{3, 4, 5})
+	})
+	t.Run("recursive", func(t *testing.T) {
+		x := iter.Skip(iter.Skip(seq(1, 2, 3), 1), 1)
+		qt.Assert(t, collect(x), qt.DeepEquals, []int{3})
+	})
 }
 
 func TestSkipWhile(t *testing.T) {
@@ -337,4 +432,90 @@ func TestCollectFunc(t *testing.T) {
 		return true
 	})
 	qt.Assert(t, s, qt.DeepEquals, []int{2, 6, 12})
+}
+
+func TestCollect(t *testing.T) {
+	x := iter.Collect(seq(1, 2, 3), collect[int])
+	qt.Assert(t, x, qt.DeepEquals, []int{1, 2, 3})
+}
+
+func TestPartition(t *testing.T) {
+	s := seq(1, 2, 3, 4, 5, 6)
+	x := iter.Partition(s, func(i int) bool {
+		return i%2 == 0
+	})
+	qt.Assert(t, collect(x.First()), qt.DeepEquals, []int{2, 4, 6})
+	qt.Assert(t, collect(x.Second()), qt.DeepEquals, []int{1, 3, 5})
+}
+
+func TestIsPartitioned(t *testing.T) {
+	s := seq(2, 4, 6)
+	qt.Assert(t, iter.IsPartitioned(s, func(i int) bool {
+		return i%2 == 0
+	}), qt.IsTrue)
+	qt.Assert(t, iter.IsPartitioned(s, func(i int) bool {
+		return i%3 == 0
+	}), qt.IsFalse)
+}
+
+func TestUnzip(t *testing.T) {
+	t.Run("unzip", func(t *testing.T) {
+		x := seq(tuple.MakePair(1, 2), tuple.MakePair(3, 4), tuple.MakePair(5, 6))
+		z := iter.Unzip(x)
+		qt.Assert(t, collect(z.First()), qt.DeepEquals, []int{1, 3, 5})
+		qt.Assert(t, collect(z.Second()), qt.DeepEquals, []int{2, 4, 6})
+	})
+	t.Run("unzip func", func(t *testing.T) {
+		x := seq(1, 2, 3)
+		z := iter.UnzipFunc(x, func(a int) (int, int) { return a, a - 2 })
+		qt.Assert(t, collect(z.First()), qt.DeepEquals, []int{1, 2, 3})
+		qt.Assert(t, collect(z.Second()), qt.DeepEquals, []int{-1, 0, 1})
+	})
+}
+
+func TestContains(t *testing.T) {
+	t.Run("contains", func(t *testing.T) {
+		x := iter.Contains(seq(1, 2, 3), 2)
+		qt.Assert(t, x, qt.IsTrue)
+		y := iter.Contains(seq(1, 2, 3), 4)
+		qt.Assert(t, y, qt.IsFalse)
+	})
+	t.Run("contains func", func(t *testing.T) {
+		x := iter.ContainsFunc(seq(1, 2, 3), func(e int) bool {
+			return e == 2
+		})
+		qt.Assert(t, x, qt.IsTrue)
+		y := iter.ContainsFunc(seq(1, 2, 3), func(e int) bool {
+			return e == 5
+		})
+		qt.Assert(t, y, qt.IsFalse)
+	})
+}
+
+// Go 中没有不可变参数，因此在迭代过程中会存在对原始seq修改的可能。
+// 真是糟糕的设计呀。
+func TestMutate(t *testing.T) {
+	type user struct{ Age int }
+	x := seq(&user{1}, &user{2})
+	iter.ForEach(x, func(user *user) { user.Age *= 2 })
+	qt.Assert(t, collect(x), qt.DeepEquals, []*user{{2}, {4}})
+}
+
+func TestHead(t *testing.T) {
+	t.Run("option", func(t *testing.T) {
+		x := seq(1, 2, 3)
+		h := iter.HeadOption(x)
+		qt.Assert(t, h.IsSomeAnd(func(i int) bool { return i == 1 }), qt.IsTrue)
+		x = iter.Tail(x)
+		h = iter.HeadOption(x)
+		qt.Assert(t, h.IsSomeAnd(func(i int) bool { return i == 2 }), qt.IsTrue)
+	})
+}
+
+func TestTail(t *testing.T) {
+	x := seq(1, 2, 3)
+	x = iter.Tail(x)
+	qt.Assert(t, collect(x), qt.DeepEquals, []int{2, 3})
+	x = iter.Tail(x)
+	qt.Assert(t, collect(x), qt.DeepEquals, []int{3})
 }

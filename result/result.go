@@ -35,8 +35,22 @@ func (self Result[T]) String() string {
 // IsOk returns true if the Result is Ok.
 func (self Result[T]) IsOk() bool { return self.err == nil }
 
+func (self Result[T]) IsOkAnd(f func(T) bool) bool {
+	if self.IsOk() {
+		return f(self.Value())
+	}
+	return false
+}
+
 // IsErr returns true if the Result is Err.
 func (self Result[T]) IsErr() bool { return !self.IsOk() }
+
+func (self Result[T]) IsErrAnd(f func(err error) bool) bool {
+	if self.IsErr() {
+		return f(self.Error())
+	}
+	return false
+}
 
 // And return self if self is error, otherwise return other.
 func (self Result[T]) And(res Result[T]) Result[T] {
@@ -44,6 +58,13 @@ func (self Result[T]) And(res Result[T]) Result[T] {
 		return res
 	}
 	return Err[T](self.err)
+}
+
+func (self Result[T]) AndThen(f func(T) Result[T]) Result[T] {
+	if self.IsOk() {
+		return f(self.Value())
+	}
+	return self
 }
 
 // Or return self if self is ok, otherwise return other.
@@ -54,10 +75,15 @@ func (self Result[T]) Or(res Result[T]) Result[T] {
 	return res
 }
 
+func (self Result[T]) OrElse(f func(error) Result[T]) Result[T] {
+	if self.IsErr() {
+		return f(self.Error())
+	}
+	return self
+}
+
 // Map returns a new Result from the result of applying
 // the given function to the value of self if ok, else return err.
-//
-// FIXME: for now, go doesn't support type parameter on method, so we have to use the same type parameter on the method.
 func (self Result[T]) Map(fn func(T) T) Result[T] {
 	if self.IsOk() {
 		return Ok(fn(self.data))
@@ -92,12 +118,11 @@ func (self Result[T]) ValueOrElse(f func() T) T {
 
 // ValueOrZero returns the value of the Result if it is Ok,
 // otherwise return the zero value of the type of the Result.
-func (self Result[T]) ValueOrZero() T {
+func (self Result[T]) ValueOrZero() (empty T) {
 	if self.IsOk() {
 		return self.data
 	}
-	var t T
-	return t
+	return
 }
 
 // Error unwrap the error of the Result, panic if the Result is Ok.
@@ -106,6 +131,22 @@ func (self Result[T]) Error() error {
 		return self.err
 	}
 	panic("unwrap ok value")
+}
+
+// ErrorOr returns error or default error.
+func (self Result[T]) ErrorOr(v error) error {
+	if self.IsErr() {
+		return self.Error()
+	}
+	return v
+}
+
+// ErrorOrElse returns error or create a new error use given function.
+func (self Result[T]) ErrorOrElse(f func() error) error {
+	if self.IsErr() {
+		return self.Error()
+	}
+	return f()
 }
 
 // IfOk call the function if the Result is Ok.
@@ -122,8 +163,8 @@ func (self Result[T]) IfErr(f func(error)) {
 	}
 }
 
-// AsRawParts return tuple of value ptr and error.
-func (self Result[T]) AsRawParts() (data T, err error) {
+// Get return tuple of value ptr and error.
+func (self Result[T]) Get() (data T, err error) {
 	if self.IsOk() {
 		data = self.data
 	} else {

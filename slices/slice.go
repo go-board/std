@@ -7,8 +7,9 @@ import (
 	"github.com/go-board/std/clone"
 	"github.com/go-board/std/cmp"
 	"github.com/go-board/std/collections/ordered"
-	"github.com/go-board/std/core"
+	"github.com/go-board/std/constraints"
 	"github.com/go-board/std/iter"
+	"github.com/go-board/std/iter/collector"
 	"github.com/go-board/std/operator"
 	"github.com/go-board/std/optional"
 	"github.com/go-board/std/result"
@@ -86,25 +87,21 @@ func Any[T any, S ~[]T](slice S, f func(T) bool) bool {
 //	slices.Chunk(seq(1,2,3,4,5,6,7,8,9), 3) => [][]int{{1,2,3}, {4,5,6}, {7,8,9}}
 //	slices.Chunk(seq(1,2,3,4,5,6,7), 3)     => [][]int{{1,2,3}, {4,5,6}, {7}}
 func Chunk[T any, S ~[]T](slice S, chunk int) []S {
-	size := len(slice)
-	res := make([]S, 0, len(slice)/chunk+1)
-	for i := 0; i < size; i += chunk {
-		if i+chunk > size {
-			tmp := make([]T, len(slice[i:]))
-			copy(tmp, slice[i:])
-			res = append(res, tmp)
-		} else {
-			tmp := make([]T, chunk)
-			copy(tmp, slice[i:i+chunk])
-			res = append(res, tmp)
-		}
-	}
-	return res
+	x := collector.Collect(Forward(slice), collector.Chunk[T](chunk))
+	return Collect(iter.Map(x, func(e iter.Seq[T]) S { return Collect(e) }))
 }
 
 // Clone returns a new slice with the same elements as the given slice.
 func Clone[T any, S ~[]T](slice S) S {
 	return Collect(Forward(slice))
+}
+
+func CountValue[T comparable, S ~[]T](slice S, value T) int {
+	return iter.Count(Forward(slice), value)
+}
+
+func CountBy[T any, S ~[]T](slice S, f func(T) bool) int {
+	return iter.CountFunc(Forward(slice), f)
 }
 
 // DeepClone returns a new slice with the cloned elements.
@@ -180,15 +177,20 @@ func Filter[T any, S ~[]T](slice S, f func(T) bool) S {
 
 // FilterIndexed returns a new slice with all elements that satisfy the given predicate.
 func FilterIndexed[T any, S ~[]T](slice S, f func(T, int) bool) S {
-	return Collect(
-		iter.Map(
-			iter.Filter(
-				iter.Enumerate(Forward(slice)),
-				func(t tuple.Pair[int, T]) bool { return f(t.Second, t.First) },
-			),
-			func(e tuple.Pair[int, T]) T { return e.Second },
-		),
-	)
+	enumerated := iter.Enumerate(Forward(slice))
+	filter := iter.Filter(enumerated, func(t tuple.Pair[int, T]) bool { return f(t.Second(), t.First()) })
+	mapped := iter.Map(filter, func(e tuple.Pair[int, T]) T { return e.Second() })
+	return Collect(mapped)
+}
+
+func FilterMap[A, B any, S ~[]A](slice S, f func(A) (B, bool)) []B {
+	return Collect(iter.FilterMap(Forward(slice), f))
+}
+
+func FilterMapIndexed[A, B any, S ~[]A](slice S, f func(A, int) (B, bool)) []B {
+	return Collect(iter.FilterMap(iter.Enumerate(Forward(slice)), func(t tuple.Pair[int, A]) (B, bool) {
+		return f(t.Second(), t.First())
+	}))
 }
 
 // Flatten returns a new slice with all elements in the given slice and all elements in all sub-slices.
@@ -213,12 +215,20 @@ func FlatMap[T, E any, S ~[]T](slice S, f func(T) []E) []E {
 // Returns the final accum value or initial value if the slice is empty.
 // If error occurred, return error early.
 func TryFold[T, A any, S ~[]T](slice S, initial A, accumulator func(A, T) (A, error)) (res A, err error) {
-	return iter.TryFold(Forward(slice), initial, accumulator)
+	return TryFoldLeft(slice, initial, accumulator)
 }
 
 // Fold accumulates value starting with initial value and applying accumulator from left to right to current accum value and each element.
 // Returns the final accum value or initial value if the slice is empty.
 func Fold[T, A any, S ~[]T](slice S, initial A, accumulator func(A, T) A) A {
+	return FoldLeft(slice, initial, accumulator)
+}
+
+func TryFoldLeft[T, A any, S ~[]T](slice S, initial A, accumulator func(A, T) (A, error)) (A, error) {
+	return iter.TryFold(Forward(slice), initial, accumulator)
+}
+
+func FoldLeft[T, A any, S ~[]T](slice S, initial A, accumulator func(A, T) A) A {
 	return iter.Fold(Forward(slice), initial, accumulator)
 }
 
@@ -239,16 +249,18 @@ func ForEach[T any, S ~[]T](slice S, f func(T)) {
 
 // ForEachIndexed iterates over the given slice and calls the given function for each element.
 func ForEachIndexed[T any, S ~[]T](slice S, f func(T, int)) {
-	iter.ForEach(iter.Enumerate(Forward(slice)), func(t tuple.Pair[int, T]) { f(t.Second, t.First) })
+	iter.ForEach(iter.Enumerate(Forward(slice)), func(t tuple.Pair[int, T]) { f(t.Second(), t.First()) })
 }
 
 // GroupBy returns a new map with the given slice split into smaller slices of the given size.
 func GroupBy[T any, TKey comparable, S ~[]T](slice S, f func(T) TKey) map[TKey]S {
+	x := collector.Collect(Forward(slice), collector.GroupBy(f))
 	res := make(map[TKey]S)
-	for _, v := range slice {
-		key := f(v)
-		res[key] = append(res[key], v)
-	}
+	iter.ForEach(x, func(t tuple.Pair[TKey, iter.Seq[T]]) {
+		iter.ForEach(t.Second(), func(e T) {
+			res[t.First()] = append(res[t.First()], e)
+		})
+	})
 	return res
 }
 
@@ -326,7 +338,7 @@ func TryMapIndexed[T, U any, S ~[]T](slice S, f func(T, int) (U, error)) ([]U, e
 
 // MapIndexed returns a new slice with the results of applying the given function to each element in the given slice.
 func MapIndexed[T, U any, S ~[]T](slice S, f func(T, int) U) []U {
-	return Collect(iter.Map(iter.Enumerate(Forward(slice)), func(x tuple.Pair[int, T]) U { return f(x.Second, x.First) }))
+	return Collect(iter.Map(iter.Enumerate(Forward(slice)), func(x tuple.Pair[int, T]) U { return f(x.Second(), x.First()) }))
 }
 
 // Max returns the maximum element in the given slice.
@@ -335,16 +347,16 @@ func MapIndexed[T, U any, S ~[]T](slice S, f func(T, int) U) []U {
 //
 //	slices.Max([]int{1,2,1}) => 2
 func Max[T cmp.Ordered, S ~[]T](slice S) optional.Optional[T] {
-	return optional.FromPair(iter.Max(Forward(slice)))
+	return iter.MaxOption(Forward(slice))
 }
 
 // MaxBy returns the maximum element in the given slice that satisfies the given function.
 func MaxBy[T any, S ~[]T](slice S, f func(T, T) int) optional.Optional[T] {
-	return optional.FromPair(iter.MaxFunc(Forward(slice), f))
+	return iter.MaxFuncOption(Forward(slice), f)
 }
 
 func MaxByKey[T any, K cmp.Ordered, S ~[]T](slice S, keyFn func(T) K) optional.Optional[T] {
-	return optional.FromPair(iter.MaxByKey(Forward(slice), keyFn))
+	return iter.MaxByKeyOption(Forward(slice), keyFn)
 }
 
 // Min returns the minimum element in the given slice.
@@ -352,17 +364,17 @@ func MaxByKey[T any, K cmp.Ordered, S ~[]T](slice S, keyFn func(T) K) optional.O
 // Example:
 //
 //	slices.Min([]int{1,2,1}) => 1
-func Min[T core.Ordered, S ~[]T](slice S) optional.Optional[T] {
-	return optional.FromPair(iter.Min(Forward(slice)))
+func Min[T constraints.Ordered, S ~[]T](slice S) optional.Optional[T] {
+	return iter.MinOption(Forward(slice))
 }
 
 // MinBy returns the minimum element in the given slice that satisfies the given function.
 func MinBy[T any, S ~[]T](slice S, f func(T, T) int) optional.Optional[T] {
-	return optional.FromPair(iter.MinFunc(Forward(slice), f))
+	return iter.MinFuncOption(Forward(slice), f)
 }
 
 func MinByKey[T any, K cmp.Ordered, S ~[]T](slice S, keyFn func(T) K) optional.Optional[T] {
-	return optional.FromPair(iter.MinByKey(Forward(slice), keyFn))
+	return iter.MinByKeyOption(Forward(slice), keyFn)
 }
 
 // None returns true if no element in the given slice satisfies the given predicate.
@@ -375,10 +387,7 @@ func None[T any, S ~[]T](slice S, f func(T) bool) bool {
 // If n is negative, it returns the last element plus one.
 // If n is greater than the length of the slice, it returns [optional.None].
 func Nth[T any, S ~[]T](slice S, n int) optional.Optional[T] {
-	if n < 0 || n >= len(slice) {
-		return optional.None[T]()
-	}
-	return optional.Some(slice[n])
+	return iter.NthOption(Forward(slice), n)
 }
 
 // Partition split slice into two slices according to a predicate.
@@ -391,8 +400,8 @@ func Nth[T any, S ~[]T](slice S, n int) optional.Optional[T] {
 //	Partition([]int{1, 2, 3}, func(s int) bool { return s % 2 == 0 })
 //	returns: ([2], [1, 3])
 func Partition[T any, S ~[]T](slice S, f func(T) bool) (S, S) {
-	groups := GroupBy(slice, func(t T) bool { return f(t) })
-	return groups[true], groups[false]
+	x := iter.Partition(Forward(slice), f)
+	return Collect(x.First()), Collect(x.Second())
 }
 
 // Reduce returns the result of applying the given function to each element in the given slice.
@@ -401,12 +410,16 @@ func Partition[T any, S ~[]T](slice S, f func(T) bool) (S, S) {
 //
 //	slices.Reduce([]int{1,2,3}, func(x, y int) int {return x+y}) => 6
 func Reduce[T any, S ~[]T](slice S, f func(T, T) T) optional.Optional[T] {
-	return optional.FromPair(iter.Reduce(Forward(slice), f))
+	return ReduceLeft(slice, f)
+}
+
+func ReduceLeft[T any, S ~[]T](slice S, f func(T, T) T) optional.Optional[T] {
+	return iter.ReduceOption(Forward(slice), f)
 }
 
 // ReduceRight returns the result of applying the given function to each element in the given slice.
 func ReduceRight[T any, S ~[]T](slice S, f func(T, T) T) optional.Optional[T] {
-	return optional.FromPair(iter.Reduce(Backward(slice), f))
+	return iter.ReduceOption(Backward(slice), f)
 }
 
 // Reverse returns a new slice with the elements in the given slice in reverse order.
@@ -468,20 +481,20 @@ func ToHashSet[T comparable, S ~[]T](slice S) map[T]struct{} {
 
 // First finds first element
 func First[T any, S ~[]T](slice S) optional.Optional[T] {
-	return optional.FromPair(iter.First(Forward(slice), func(T) bool { return true }))
+	return iter.FirstOption(Forward(slice), func(T) bool { return true })
 }
 
 func FirstFunc[E any, S ~[]E](slice S, f func(E) bool) optional.Optional[E] {
-	return optional.FromPair(iter.First(Forward(slice), f))
+	return iter.FirstOption(Forward(slice), f)
 }
 
 // Last finds last element
 func Last[T any, S ~[]T](slice S) optional.Optional[T] {
-	return optional.FromPair(iter.Last(Forward(slice), func(T) bool { return true }))
+	return iter.LastOption(Forward(slice), func(T) bool { return true })
 }
 
 func LastFunc[E any, S ~[]E](slice S, f func(E) bool) optional.Optional[E] {
-	return optional.FromPair(iter.Last(Forward(slice), f))
+	return iter.LastOption(Forward(slice), f)
 }
 
 // SpliceFirst return first element and rest if len > 0, else return (None, []T)
@@ -522,7 +535,5 @@ func SpliceLast[T any, S ~[]T](slice S) (optional.Optional[T], S) {
 //	interface: nil
 //	chan/map/slice: nil
 func FirstNonZero[T comparable, S ~[]T](slice S) T {
-	var zero T
-	e, _ := iter.First(Forward(slice), func(t T) bool { return t != zero })
-	return e
+	return iter.HeadOption(iter.FilterZero(Forward(slice))).ValueOrZero()
 }

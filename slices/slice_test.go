@@ -18,6 +18,11 @@ func (i item) Compare(o item) int {
 	return cmp.Compare(i.Value, o.Value)
 }
 
+func TestBackward(t *testing.T) {
+	x := slices.Backward([]int{1, 2, 3})
+	qt.Assert(t, slices.Collect(x), qt.DeepEquals, []int{3, 2, 1})
+}
+
 func TestSort(t *testing.T) {
 	t.Run("sort_by", func(t *testing.T) {
 		t.Run("comparable", func(t *testing.T) {

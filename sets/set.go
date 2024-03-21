@@ -1,16 +1,17 @@
 package sets
 
 import (
-	"github.com/go-board/std/core"
 	"github.com/go-board/std/iter"
 )
 
-var unit = struct{}{}
+type _Unit = struct{}
 
-type HashSet[E comparable] struct{ inner map[E]core.Unit }
+var unit _Unit
+
+type HashSet[E comparable] struct{ inner map[E]_Unit }
 
 func New[E comparable]() HashSet[E] {
-	return HashSet[E]{inner: make(map[E]core.Unit)}
+	return HashSet[E]{inner: make(map[E]_Unit)}
 }
 
 // FromSlice returns a new empty hash set.
@@ -95,10 +96,10 @@ func (self HashSet[E]) IsEmpty() bool {
 	return self.Size() == 0
 }
 
-func (self HashSet[E]) ToMap() map[E]struct{} {
-	m := make(map[E]struct{})
+func (self HashSet[E]) ToMap() map[E]_Unit {
+	m := make(map[E]_Unit)
 	for k := range self.inner {
-		m[k] = struct{}{}
+		m[k] = unit
 	}
 	return m
 }

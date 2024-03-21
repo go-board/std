@@ -16,16 +16,16 @@ func invert[T any](cmp func(T, T) int) func(T, T) int {
 // MapEntry is a tuple of key and value.
 type MapEntry[K, V any] struct{ inner tuple.Pair[K, V] }
 
-// MapEntryOf creates a new MapEntry.
-func MapEntryOf[K, V any](key K, value V) MapEntry[K, V] {
+// MakeMapEntry creates a new MapEntry.
+func MakeMapEntry[K, V any](key K, value V) MapEntry[K, V] {
 	return MapEntry[K, V]{inner: tuple.MakePair(key, value)}
 }
 
 // Key returns the key of the MapEntry.
-func (self MapEntry[K, V]) Key() K { return self.inner.First }
+func (self MapEntry[K, V]) Key() K { return self.inner.First() }
 
 // Value returns the value of the MapEntry.
-func (self MapEntry[K, V]) Value() V { return self.inner.Second }
+func (self MapEntry[K, V]) Value() V { return self.inner.Second() }
 
 // Map is an ordered map based on a B-Tree.
 type Map[K, V any] struct {
@@ -49,12 +49,13 @@ func NewOrderedMap[K cmp.Ordered, V any]() *Map[K, V] {
 }
 
 func (self *Map[K, V]) keyEntry(k K) MapEntry[K, V] {
-	return MapEntry[K, V]{inner: tuple.Pair[K, V]{First: k}}
+	var v V
+	return MapEntry[K, V]{inner: tuple.MakePair(k, v)}
 }
 
 // Insert inserts a new MapEntry.
 func (self *Map[K, V]) Insert(key K, value V) optional.Optional[V] {
-	e, ok := self.inner.Set(MapEntryOf(key, value))
+	e, ok := self.inner.Set(MakeMapEntry(key, value))
 	return optional.Map(optional.FromPair(e, ok), MapEntry[K, V].Value)
 }
 

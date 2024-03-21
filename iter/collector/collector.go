@@ -41,9 +41,17 @@ func newCollectorImpl[S, E, C any](state S, collectSeq func(state S, s iter.Seq[
 	return &collectorImpl[S, E, C]{state: state, collectSeq: collectSeq, collect: collect, finish: finish}
 }
 
-func (c *collectorImpl[S, E, C]) CollectSeq(s iter.Seq[E]) { c.state = c.collectSeq(c.state, s) }
-func (c *collectorImpl[S, E, C]) Collect(x E)              { c.state = c.collect(c.state, x) }
-func (c *collectorImpl[S, E, C]) Finish() C                { return c.finish(c.state) }
+func (self *collectorImpl[S, E, C]) CollectSeq(s iter.Seq[E]) {
+	self.state = self.collectSeq(self.state, s)
+}
+
+func (self *collectorImpl[S, E, C]) Collect(x E) {
+	self.state = self.collect(self.state, x)
+}
+
+func (self *collectorImpl[S, E, C]) Finish() C {
+	return self.finish(self.state)
+}
 
 // ToSlice collects all elements in [iter.Seq] to slice.
 func ToSlice[E any]() Collector[E, []E] {
@@ -76,7 +84,7 @@ func ToOrderedMapFunc[E, K, V any](cmp func(K, K) int, f func(E) (K, V)) Collect
 	return newCollectorImpl(
 		ordered.NewMap[K, V](cmp),
 		func(state *ordered.Map[K, V], s iter.Seq[E]) *ordered.Map[K, V] {
-			state.InsertIter(iter.Map(s, func(e E) ordered.MapEntry[K, V] { return ordered.MapEntryOf(f(e)) }))
+			state.InsertIter(iter.Map(s, func(e E) ordered.MapEntry[K, V] { return ordered.MakeMapEntry(f(e)) }))
 			return state
 		},
 		func(state *ordered.Map[K, V], x E) *ordered.Map[K, V] {
@@ -136,23 +144,25 @@ func Distinct[E comparable]() Collector[E, iter.Seq[E]] {
 	return newCollectorImpl(
 		tuple.MakePair(make(map[E]struct{}), make([]E, 0)),
 		func(state tuple.Pair[map[E]struct{}, []E], s iter.Seq[E]) tuple.Pair[map[E]struct{}, []E] {
-			iter.ForEach(s, func(e E) {
-				if _, ok := state.First[e]; !ok {
-					state.First[e] = struct{}{}
-					state.Second = append(state.Second, e)
+			return iter.Fold(s, state, func(p tuple.Pair[map[E]struct{}, []E], e E) tuple.Pair[map[E]struct{}, []E] {
+				first, second := p.First(), p.Second()
+				if _, ok := first[e]; !ok {
+					first[e] = struct{}{}
+					second = append(second, e)
 				}
+				return tuple.MakePair(first, second)
 			})
-			return state
 		},
 		func(state tuple.Pair[map[E]struct{}, []E], x E) tuple.Pair[map[E]struct{}, []E] {
-			if _, ok := state.First[x]; !ok {
-				state.First[x] = struct{}{}
-				state.Second = append(state.Second, x)
+			first, second := state.First(), state.Second()
+			if _, ok := first[x]; !ok {
+				first[x] = struct{}{}
+				second = append(second, x)
 			}
-			return state
+			return tuple.MakePair(first, second)
 		},
 		func(state tuple.Pair[map[E]struct{}, []E]) iter.Seq[E] {
-			return sliceSeq(state.Second)
+			return sliceSeq(state.Second())
 		},
 	)
 }
@@ -163,54 +173,58 @@ func DistinctFunc[E any](f func(E, E) int) Collector[E, iter.Seq[E]] {
 	return newCollectorImpl(
 		tuple.MakePair(ordered.NewSet(f), make([]E, 0)),
 		func(state tuple.Pair[*ordered.Set[E], []E], s iter.Seq[E]) tuple.Pair[*ordered.Set[E], []E] {
-			iter.ForEach(s, func(e E) {
-				if !state.First.Contains(e) {
-					state.First.Insert(e)
-					state.Second = append(state.Second, e)
+			return iter.Fold(s, state, func(p tuple.Pair[*ordered.Set[E], []E], e E) tuple.Pair[*ordered.Set[E], []E] {
+				first, second := p.First(), p.Second()
+				if !first.Contains(e) {
+					first.Insert(e)
+					second = append(second, e)
 				}
+				return tuple.MakePair(first, second)
 			})
-			return state
 		},
 		func(state tuple.Pair[*ordered.Set[E], []E], x E) tuple.Pair[*ordered.Set[E], []E] {
-			if !state.First.Contains(x) {
-				state.First.Insert(x)
-				state.Second = append(state.Second, x)
+			first, second := state.First(), state.Second()
+			if !first.Contains(x) {
+				first.Insert(x)
+				second = append(second, x)
 			}
-			return state
+			return tuple.MakePair(first, second)
 		},
 		func(state tuple.Pair[*ordered.Set[E], []E]) iter.Seq[E] {
-			return sliceSeq(state.Second)
+			return sliceSeq(state.Second())
 		},
 	)
 }
 
-// Partition creates two [iter.Seq], split by the given predicate function.
-//
-// The first [iter.Seq] contains elements that satisfies the predicate.
-// The second [iter.Seq]
-func Partition[E any](f func(E) bool) Collector[E, tuple.Pair[iter.Seq[E], iter.Seq[E]]] {
+func chunk[E any](chunks [][]E, e E, n int) [][]E {
+	if len(chunks) == 0 {
+		chunks = append(chunks, []E{e})
+	} else if len(chunks[len(chunks)-1]) == n {
+		chunks = append(chunks, []E{e})
+	} else {
+		chunks[len(chunks)-1] = append(chunks[len(chunks)-1], e)
+	}
+	return chunks
+}
+
+func Chunk[E any](n int) Collector[E, iter.Seq[iter.Seq[E]]] {
 	return newCollectorImpl(
-		tuple.MakePair(make([]E, 0), make([]E, 0)),
-		func(state tuple.Pair[[]E, []E], s iter.Seq[E]) tuple.Pair[[]E, []E] {
-			iter.ForEach(s, func(e E) {
-				if f(e) {
-					state.First = append(state.First, e)
-				} else {
-					state.Second = append(state.Second, e)
+		make([][]E, 0),
+		func(state [][]E, s iter.Seq[E]) [][]E {
+			iter.ForEach(s, func(e E) { state = chunk(state, e, n) })
+			return state
+		},
+		func(state [][]E, x E) [][]E {
+			return chunk(state, x, n)
+		},
+		func(state [][]E) iter.Seq[iter.Seq[E]] {
+			return func(yield func(iter.Seq[E]) bool) {
+				for _, chunk := range state {
+					if !yield(sliceSeq(chunk)) {
+						break
+					}
 				}
-			})
-			return state
-		},
-		func(state tuple.Pair[[]E, []E], x E) tuple.Pair[[]E, []E] {
-			if f(x) {
-				state.First = append(state.First, x)
-			} else {
-				state.Second = append(state.Second, x)
 			}
-			return state
-		},
-		func(state tuple.Pair[[]E, []E]) tuple.Pair[iter.Seq[E], iter.Seq[E]] {
-			return tuple.MakePair(sliceSeq(state.First), sliceSeq(state.Second))
 		},
 	)
 }

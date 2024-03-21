@@ -3,7 +3,9 @@ package sync
 import (
 	"sync"
 
+	"github.com/go-board/std/iter"
 	"github.com/go-board/std/optional"
+	"github.com/go-board/std/tuple"
 )
 
 // Map is generic version of sync.Map.
@@ -14,16 +16,11 @@ func (self *Map[K, V]) Insert(key K, v V) {
 }
 
 func (self *Map[K, V]) Get(key K) (V, bool) {
-	val, ok := self.inner.Load(key)
-	if !ok {
-		var t V
-		return t, false
-	}
-	return val.(V), true
+	return self.GetOptional(key).Get()
 }
 
 func (self *Map[K, V]) GetOptional(key K) optional.Optional[V] {
-	return optional.FromPair(self.Get(key))
+	return optional.Map(optional.FromPair(self.inner.Load(key)), func(x any) V { return x.(V) })
 }
 
 func (self *Map[K, V]) GetOrPut(key K, val V) (V, bool) {
@@ -37,6 +34,24 @@ func (self *Map[K, V]) GetOrPut(key K, val V) (V, bool) {
 
 func (self *Map[K, V]) Range(fn func(K, V) bool) {
 	self.inner.Range(func(key, value any) bool { return fn(key.(K), value.(V)) })
+}
+
+func (self *Map[K, V]) Keys() iter.Seq[K] {
+	return func(yield func(K) bool) {
+		self.Range(func(k K, v V) bool { return yield(k) })
+	}
+}
+
+func (self *Map[K, V]) Values() iter.Seq[V] {
+	return func(yield func(V) bool) {
+		self.Range(func(k K, v V) bool { return yield(v) })
+	}
+}
+
+func (self *Map[K, V]) Entries() iter.Seq[tuple.Pair[K, V]] {
+	return func(yield func(tuple.Pair[K, V]) bool) {
+		self.Range(func(k K, v V) bool { return yield(tuple.MakePair(k, v)) })
+	}
 }
 
 func (self *Map[K, V]) Delete(key K) {

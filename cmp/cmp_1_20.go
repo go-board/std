@@ -3,7 +3,7 @@
 package cmp
 
 import (
-	"github.com/go-board/std/core"
+	"github.com/go-board/std/constraints"
 )
 
 // isNaN reports whether x is a NaN without requiring the math package.
@@ -12,7 +12,7 @@ func isNaN[T Ordered](x T) bool {
 	return x != x
 }
 
-type Ordered = core.Ordered
+type Ordered = constraints.Ordered
 
 func Compare[T Ordered](lhs T, rhs T) int {
 	xNaN := isNaN(lhs)

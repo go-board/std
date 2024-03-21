@@ -77,3 +77,11 @@ func TestCollectOne(t *testing.T) {
 	c.Collect(2)
 	qt.Assert(t, c.Finish(), qt.DeepEquals, []int{1, 2})
 }
+
+func TestChunk(t *testing.T) {
+	m := collector.Collect(seq(1, 2, 3, 4, 5), collector.Chunk[int](2))
+	x := collector.Collect(iter.Map(m, func(e iter.Seq[int]) []int {
+		return collector.Collect(e, collector.ToSlice[int]())
+	}), collector.ToSlice[[]int]())
+	qt.Assert(t, x, qt.DeepEquals, [][]int{{1, 2}, {3, 4}, {5}})
+}
